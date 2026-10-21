@@ -11,7 +11,7 @@
         })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Institutional Quality Assurance & Oversight — City College of Calamba</title>
+    <title>LexiMetrix — Quantitative Student Feedback & NLP Evaluation Dashboard</title>
     <!-- CSRF Token injected for security -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
@@ -471,6 +471,64 @@
         html[data-theme="light"] .cm-cell-err { background: rgba(244, 63, 94, 0.12); color: #be123c; border-color: rgba(225, 29, 72, 0.35); }
         html[data-theme="light"] .badge-Verified { color: #047857; background: rgba(16, 185, 129, 0.14); }
         html[data-theme="light"] .badge-Overridden { color: #1d4ed8; background: rgba(59, 130, 246, 0.14); }
+
+        /* ===== LEXIMETRIX SAAS REDESIGN: SIDEBAR + BENTO COMMAND CENTER + EXPLAINABILITY ===== */
+        :root {
+            --surface-ground: #040814;
+            --surface-card: rgba(12, 21, 40, 0.76);
+            --surface-card-hover: rgba(18, 31, 58, 0.92);
+            --primary: #0ea5e9;
+            --primary-hover: #0284c7;
+            --txt-blue: #38bdf8;
+            --txt-gold: #fbbf24;
+            --txt-green: #34d399;
+            --txt-red: #fb7185;
+        }
+        .lx-app-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh - 76px); }
+        .lx-sidebar {
+            background: rgba(7, 13, 27, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-light); padding: 22px 14px; display: flex; flex-direction: column; gap: 6px;
+            position: sticky; top: 76px; height: calc(100vh - 76px); overflow-y: auto;
+        }
+        .lx-side-section { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.1px; color: var(--text-muted); padding: 10px 12px 4px; }
+        .lx-side-btn {
+            width: 100%; text-align: left; background: transparent; border: 1px solid transparent; color: var(--text-body);
+            padding: 10px 12px; border-radius: 12px; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 10px; transition: var(--transition); text-decoration: none;
+        }
+        .lx-side-btn:hover { background: rgba(14, 165, 233, 0.1); color: var(--text-title); border-color: rgba(56, 189, 248, 0.25); transform: translateX(2px); }
+        .lx-side-btn.active { background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.18)); color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); font-weight: 700; }
+        .overview-summary-card { cursor: pointer; transition: var(--transition); border: 1px solid rgba(56, 189, 248, 0.28); }
+        .overview-summary-card:hover { transform: translateY(-3px); border-color: #38bdf8; box-shadow: 0 18px 40px rgba(14, 165, 233, 0.18); }
+
+        /* In-Row Trigger Word Highlights & Why Positive / Negative Reason Banner */
+        .hl-pos { background: rgba(16, 185, 129, 0.22); color: #34d399; padding: 1px 6px; border-radius: 5px; font-weight: 700; border-bottom: 2px solid #10b981; }
+        .hl-neg { background: rgba(244, 63, 94, 0.22); color: #fb7185; padding: 1px 6px; border-radius: 5px; font-weight: 700; border-bottom: 2px solid #f43f5e; }
+        .hl-amp { background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 1px 5px; border-radius: 5px; font-weight: 700; }
+        .hl-inv { background: rgba(168, 85, 247, 0.25); color: #c084fc; padding: 1px 6px; border-radius: 5px; font-weight: 800; border-bottom: 2px dashed #a855f7; }
+
+        .why-reason-box {
+            margin-top: 8px; padding: 7px 11px; border-radius: 8px; font-size: 0.75rem; line-height: 1.45;
+            display: flex; align-items: flex-start; gap: 6px; font-weight: 600;
+        }
+        .why-Positive { background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; color: #6ee7b7; }
+        .why-Negative { background: rgba(244, 63, 94, 0.1); border-left: 3px solid #f43f5e; color: #fda4af; }
+        .why-Neutral  { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; color: #fcd34d; }
+
+        html[data-theme="light"] .lx-sidebar { background: rgba(255, 255, 255, 0.92); }
+        html[data-theme="light"] .hl-pos { background: rgba(16, 185, 129, 0.18); color: #047857; }
+        html[data-theme="light"] .hl-neg { background: rgba(244, 63, 94, 0.16); color: #be123c; }
+        html[data-theme="light"] .hl-amp { background: rgba(245, 158, 11, 0.18); color: #b45309; }
+        html[data-theme="light"] .hl-inv { background: rgba(168, 85, 247, 0.16); color: #6b21a8; }
+        html[data-theme="light"] .why-Positive { background: rgba(16, 185, 129, 0.12); color: #065f46; }
+        html[data-theme="light"] .why-Negative { background: rgba(244, 63, 94, 0.1); color: #9f1239; }
+        html[data-theme="light"] .why-Neutral  { background: rgba(245, 158, 11, 0.12); color: #92400e; }
+        html[data-theme="light"] #overviewNarrativeBox { background: #f8fafc !important; }
+        @media (max-width: 1024px) {
+            .lx-app-shell { grid-template-columns: 1fr; }
+            .lx-sidebar { display: none; }
+        }
+
     </style>
 </head>
 <body>
@@ -478,12 +536,12 @@
     <div id="splashCurtain" class="splash-curtain" role="status" aria-live="polite">
         <div class="splash-aura"></div>
         <div class="splash-emblem-wrap">
-            <img src="{{ url_for('static', filename='ccclogo.png') }}" alt="City College of Calamba Emblem" class="splash-emblem">
+            <img src="/leximetrix-logo.svg" alt="LexiMetrix Emblem" class="splash-emblem">
         </div>
         <div class="splash-content">
-            <div class="splash-tag">Institutional Quality Assurance & Oversight</div>
-            <h1 class="splash-title">City College of Calamba</h1>
-            <p class="splash-subtitle">Bilingual Sentiment Analysis & Student Feedback Portal</p>
+            <div class="splash-tag">Multilingual NLP Feedback Evaluation Engine</div>
+            <h1 class="splash-title">LexiMetrix Analytics</h1>
+            <p class="splash-subtitle">Quantitative Evaluation of Student Feedback Using Natural Language Processing</p>
             <div class="splash-loader-bar">
                 <div class="splash-loader-fill"></div>
             </div>
@@ -536,12 +594,12 @@
                 </div>
             </div>
 
-            {% if role == 'MISD' %}
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
             <div class="override-box" id="modalOverrideBox">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <div>
                         <div style="font-size:0.75rem; font-weight:800; color:#60a5fa; text-transform:uppercase;">
-                            4. MISD Ground-Truth Verification & Label Override
+                            4. Developer Ground-Truth Verification & Label Override
                         </div>
                         <div style="font-size:0.76rem; color:var(--text-muted); margin-top:2px;" id="modalVerifyStatusText">
                             Confirm or correct the AI polarity to include this record in the Confusion Matrix & F1-Score evaluation.
@@ -566,7 +624,7 @@
     </div>
 
     <!-- Add Academic Year Modal (MISD Only) -->
-    {% if role == 'MISD' %}
+    {% if role in ['Developer', 'MISD', 'Admin'] %}
     <div id="addYearModal" class="modal-overlay">
         <div class="modal-sheet" style="text-align: left; width: min(90%, 420px);">
             <h4 style="color: var(--text-title); font-size: 1.15rem; margin-bottom: 8px;">Register Academic Year</h4>
@@ -597,11 +655,11 @@
     <!-- Administrator sign-out farewell screen -->
     <div id="farewellScreen" class="farewell-screen" role="alertdialog" aria-live="polite" aria-labelledby="farewellTitle">
         <div class="farewell-aura"></div>
-        <img src="{{ url_for('static', filename='ccclogo.png') }}" alt="" class="farewell-emblem">
+        <img src="/leximetrix-logo.svg" alt="" class="farewell-emblem">
         <div class="farewell-body">
             <div class="farewell-tag">Signing out</div>
             <h2 id="farewellTitle" class="farewell-title">Salamat sa iyong paglilingkod, <span id="farewellName">{{ username }}</span>!</h2>
-            <p class="farewell-sub">Maraming salamat sa pagpapanatili ng kalidad ng City College of Calamba. Thank you for keeping our institutional standards strong.</p>
+            <p class="farewell-sub">Maraming salamat sa paggamit ng LexiMetrix Evaluation System. Your quantitative evaluation session has been safely closed.</p>
             <div class="farewell-bar"></div>
             <div id="farewellStatus" class="farewell-status">Isinasara ang iyong session nang ligtas...</div>
             <button type="button" id="farewellRetry" class="btn-action farewell-retry" onclick="retryLogout()">Taking long? Try again</button>
@@ -613,12 +671,23 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </form>
 
-    <!-- Batch CSV Ingestion Modal (MISD Only) -->
-    {% if role == 'MISD' %}
+    <!-- Batch CSV Ingestion Modal (Available to Developers, Faculty & Officers) -->
+    {% if True %}
     <div id="csvModal" class="modal-overlay">
-        <div class="modal-card" style="width: min(94%, 720px); max-height: 92vh; overflow-y: auto;">
-            <h3 style="color:var(--text-title); margin-bottom: 8px;">Upload Survey Data (CSV)</h3>
-            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom: 18px;">Upload semester student narratives. The file is checked first, so nothing is saved until you confirm. Personal details in comments are masked automatically.</p>
+        <div class="modal-card" style="width: min(94%, 740px); max-height: 92vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                <div>
+                    <span style="font-size:0.7rem; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.8px;">📁 Batch Dataset Ingestion</span>
+                    <h3 style="color:var(--text-title); margin-top:2px;">Upload Student Feedback CSV</h3>
+                </div>
+                <button type="button" class="btn-action" onclick="downloadCsvTemplate()" style="padding:8px 14px; font-size:0.78rem; background:linear-gradient(135deg, #0ea5e9, #10b981);">
+                    📥 Download CSV Layout Template (.csv)
+                </button>
+            </div>
+            <div style="background:rgba(14,165,233,0.08); border:1px dashed rgba(56,189,248,0.4); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:0.78rem; color:var(--text-body); line-height:1.5;">
+                <strong style="color:var(--text-title);">Recommended CSV Columns:</strong> <code>Program</code>, <code>Academic_Year</code>, <code>Semester</code>, <code>Feedback</code>.<br>
+                <span style="color:var(--text-muted);">💡 <em>Smart Fallback:</em> Even if your CSV only has a single <code>Feedback</code> / <code>Comment</code> column, the fallback selections below will automatically fill in the Program, Academic Year, and Semester for you.</span>
+            </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
                 <div>
@@ -700,7 +769,7 @@
     {% endif %}
 
     <!-- AI Confusion Matrix & F1-Score Evaluation Modal (MISD Only) -->
-    {% if role == 'MISD' %}
+    {% if role in ['Developer', 'MISD', 'Admin'] %}
     <div id="modelEvalModal" class="modal-overlay">
         <div class="modal-card" style="width: min(95%, 920px); max-height: 92vh; overflow-y: auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
@@ -815,22 +884,161 @@
     </div>
     {% endif %}
 
+
+    <!-- Full Total Summary Breakdown Modal (Replaces standalone AI Testing Box & expands Overview Card) -->
+    <div id="totalSummaryModal" class="modal-overlay">
+        <div class="modal-card" style="width: min(95%, 940px); max-height: 92vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <span style="font-size:0.72rem; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.8px;">📑 Comprehensive Quantitative Report</span>
+                    <h3 style="color:var(--text-title); font-size:1.25rem; margin-top:2px;">Total Summary of All Evaluated Student Responses</h3>
+                </div>
+                <button class="btn-nav" onclick="closeTotalSummaryModal()" style="padding:5px 12px; font-size:0.8rem;">✕ Close</button>
+            </div>
+
+            <div id="modalExecutiveSummaryText" style="background:rgba(14,165,233,0.09); border:1px solid rgba(56,189,248,0.35); border-left:4px solid #0ea5e9; border-radius:12px; padding:14px 16px; font-size:0.86rem; line-height:1.6; color:var(--text-title); margin-bottom:16px;">
+                Loading quantitative summary...
+            </div>
+
+            <!-- Grand KPI Strip -->
+            <div class="eval-kpi-grid" style="margin-bottom:18px;">
+                <div class="eval-kpi-card" style="border-top-color:#0ea5e9;">
+                    <div class="eval-kpi-label">Current Scope Total</div>
+                    <div class="eval-kpi-val" style="color:#38bdf8;" id="sumScopeTotal">0</div>
+                    <div class="eval-kpi-sub" id="sumAllSourcesSub">All Sources: 0</div>
+                </div>
+                <div class="eval-kpi-card" style="border-top-color:#10b981;">
+                    <div class="eval-kpi-label">Positive Responses</div>
+                    <div class="eval-kpi-val" style="color:#10b981;" id="sumScopePos">0 (0%)</div>
+                    <div class="eval-kpi-sub" id="sumBinaryPosSub">Actionable Binary: 0%</div>
+                </div>
+                <div class="eval-kpi-card" style="border-top-color:#f43f5e;">
+                    <div class="eval-kpi-label">Negative Responses</div>
+                    <div class="eval-kpi-val" style="color:#f43f5e;" id="sumScopeNeg">0 (0%)</div>
+                    <div class="eval-kpi-sub" id="sumBinaryNegSub">Actionable Binary: 0%</div>
+                </div>
+                <div class="eval-kpi-card" style="border-top-color:#f59e0b;">
+                    <div class="eval-kpi-label">Neutral / Descriptive</div>
+                    <div class="eval-kpi-val" style="color:#fbbf24;" id="sumScopeNeu">0 (0%)</div>
+                    <div class="eval-kpi-sub">Factual / Non-evaluative</div>
+                </div>
+            </div>
+
+            <!-- Breakdown Tables: Program & Aspect -->
+            <div style="display:grid; grid-template-columns: 1fr 1.15fr; gap:16px; margin-bottom:16px;">
+                <div style="background:rgba(7,13,29,0.5); border:1px solid var(--border-light); border-radius:14px; padding:14px;">
+                    <div style="font-size:0.76rem; font-weight:800; color:var(--text-title); text-transform:uppercase; margin-bottom:8px;">
+                        📚 Breakdown by Academic Program
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="padding:10px;">Program</th>
+                                    <th style="padding:10px;">Total</th>
+                                    <th style="padding:10px; color:#10b981;">Pos</th>
+                                    <th style="padding:10px; color:#f43f5e;">Neg</th>
+                                    <th style="padding:10px; color:#fbbf24;">Neu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sumProgramTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="background:rgba(7,13,29,0.5); border:1px solid var(--border-light); border-radius:14px; padding:14px;">
+                    <div style="font-size:0.76rem; font-weight:800; color:var(--text-title); text-transform:uppercase; margin-bottom:8px;">
+                        🎯 Breakdown by Evaluation Aspect
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="padding:10px;">Aspect Dimension</th>
+                                    <th style="padding:10px;">Mentions</th>
+                                    <th style="padding:10px; color:#10b981;">Pos</th>
+                                    <th style="padding:10px; color:#f43f5e;">Neg</th>
+                                    <th style="padding:10px; color:#fbbf24;">Neu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sumAspectTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breakdown by Academic Term & Data Source -->
+            <div style="background:rgba(7,13,29,0.5); border:1px solid var(--border-light); border-radius:14px; padding:14px; margin-bottom:16px;">
+                <div style="font-size:0.76rem; font-weight:800; color:var(--text-title); text-transform:uppercase; margin-bottom:8px;">
+                    📅 Breakdown by Academic Term &amp; Semester
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="padding:10px;">Academic Year &amp; Semester</th>
+                                <th style="padding:10px;">Total Responses</th>
+                                <th style="padding:10px; color:#10b981;">Positive</th>
+                                <th style="padding:10px; color:#f43f5e;">Negative</th>
+                                <th style="padding:10px; color:#fbbf24;">Neutral</th>
+                                <th style="padding:10px;">Net Polarity Verdict</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sumTermTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Optional Collapsible Single-Sentence Diagnostic Tester (For Developer Verification) -->
+            <details style="background:rgba(255,255,255,0.02); border:1px dashed var(--border-light); border-radius:12px; padding:12px 16px; margin-bottom:14px;">
+                <summary style="cursor:pointer; font-size:0.8rem; font-weight:700; color:#38bdf8;">
+                    🧪 Optional Developer Sandbox: Test a Single Custom Sentence
+                </summary>
+                <div style="margin-top:12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.3fr; gap: 8px; margin-bottom: 10px;">
+                        <select id="singleProgram" class="select-input" style="margin-bottom:0;">
+                            <option value="BSCS">BSCS</option>
+                            <option value="BSIT">BSIT</option>
+                        </select>
+                        <select id="singleYear" class="select-input" style="margin-bottom:0;"></select>
+                        <select id="singleSem" class="select-input" style="margin-bottom:0;">
+                            <option value="1st Semester">1st Sem</option>
+                            <option value="2nd Semester">2nd Sem</option>
+                        </select>
+                        <select id="singleExpectedSentiment" class="select-input" style="margin-bottom:0;">
+                            <option value="">Ground Truth: Auto</option>
+                            <option value="Positive">Expected: Positive</option>
+                            <option value="Neutral">Expected: Neutral</option>
+                            <option value="Negative">Expected: Negative</option>
+                        </select>
+                    </div>
+                    <textarea id="singleComment" class="textarea-input" style="height:75px;" placeholder="Enter a sample English, Tagalog, or Taglish comment to test live scoring..."></textarea>
+                    <button class="btn-action" onclick="submitSingleFeedback()">Run Single-Sentence Test</button>
+                </div>
+            </details>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <button class="btn-nav" onclick="exportCurrentCsv()" style="border-color:rgba(14,165,233,0.4); color:#38bdf8;">📤 Export Filtered Dataset (CSV)</button>
+                <button class="btn-action" onclick="closeTotalSummaryModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Top Navigation Header -->
     <header class="topbar">
         <div class="brand-unit">
-            <img src="{{ url_for('static', filename='ccclogo.png') }}" alt="CCC Logo" class="brand-logo-img">
+            <img src="/leximetrix-logo.svg" alt="LexiMetrix Logo" class="brand-logo-img">
             <div>
-                <div class="brand-title">Sentiment Evaluation System</div>
-                <div class="brand-subtitle">City College of Calamba</div>
+                <div class="brand-title">LexiMetrix</div>
+                <div class="brand-subtitle">Multilingual NLP Feedback Evaluation Engine</div>
             </div>
         </div>
         <div class="nav-actions" id="navActionsTarget">
+            <a href="{{ url_for('student_portal') }}" onclick="window._loggingOut=true;" class="btn-nav" title="Switch to the Student Feedback & Survey Portal" style="text-decoration:none; border-color:rgba(99,102,241,0.4); color:#a5b4fc;">🏛️ Student Portal</a>
             <button type="button" class="btn-nav btn-tour" onclick="CCCTour.start()" title="Take a guided tour of this dashboard" style="border-color:rgba(245,158,11,0.4); color:var(--txt-gold);">❓ Tour</button>
-            {% if role == 'MISD' %}
-            <button class="btn-nav" onclick="openCsvModal()">Upload CSV</button>
-            {% endif %}
+            <button class="btn-nav" onclick="openCsvModal()" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📥 Upload CSV &amp; Template</button>
             <button class="btn-nav" onclick="exportCurrentCsv()">Export CSV</button>
-            {% if role == 'MISD' %}
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
             <button class="btn-nav" onclick="openLexiconModal()">Slang Manager</button>
             <button class="btn-nav" id="evalNavBtn" onclick="openModelEvalModal()" style="border-color:rgba(16,185,129,0.45); color:#34d399; font-weight:700;">📊 AI Evaluation (F1)</button>
             {% endif %}
@@ -842,19 +1050,45 @@
         </div>
     </header>
 
-    <main class="workspace">
+    <div class="lx-app-shell">
+        <aside class="lx-sidebar" aria-label="Primary Workspace Navigation">
+            <div class="lx-side-section">Analytics Workspace</div>
+            <button type="button" class="lx-side-btn active" onclick="window.scrollTo({top:0, behavior:'smooth'})">📊 Executive Overview</button>
+            <button type="button" class="lx-side-btn" onclick="openTotalSummaryModal()">📑 Total Summary Report</button>
+            <button type="button" class="lx-side-btn" onclick="document.getElementById('logsPanelTarget').scrollIntoView({behavior:'smooth'})">💬 Explainable Feedback Logs</button>
+            <button type="button" class="lx-side-btn" onclick="document.getElementById('keywordCloudTarget').scrollIntoView({behavior:'smooth'})">🔤 Recurring Lexicon Cloud</button>
+
+            <div class="lx-side-section">Data &amp; Batch Tools</div>
+            <button type="button" class="lx-side-btn" onclick="openCsvModal()">📥 Upload CSV &amp; Template</button>
+            <button type="button" class="lx-side-btn" onclick="downloadCsvTemplate()">📋 Download CSV Template</button>
+            <button type="button" class="lx-side-btn" onclick="exportCurrentCsv()">📤 Export Filtered CSV</button>
+
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            <div class="lx-side-section">Developer Controls</div>
+            <button type="button" class="lx-side-btn" onclick="openLexiconModal()">🛠️ Taglish Lexicon Studio</button>
+            <button type="button" class="lx-side-btn" onclick="openModelEvalModal()">🎯 AI F1 &amp; Confusion Matrix</button>
+            <button type="button" class="lx-side-btn" onclick="openAddYearModal()">📅 Add Academic Year</button>
+            {% endif %}
+
+            <div class="lx-side-section">Portals &amp; Preferences</div>
+            <a href="{{ url_for('student_portal') }}" onclick="window._loggingOut=true;" class="lx-side-btn">🏛️ Student Feedback Portal</a>
+            <button type="button" class="lx-side-btn" onclick="CCCTour.start()">❓ Interactive Guide</button>
+            <button type="button" class="lx-side-btn" onclick="toggleTheme()">🌓 Toggle Light / Dark</button>
+        </aside>
+        <main class="workspace">
         <!-- Data Source Integrity Tabs -->
         <div class="source-filter-bar">
-            <button class="source-tab active" onclick="switchSource('Portal', this)">📱 Portal Submissions</button>
-            {% if role == 'MISD' %}
+            <button class="source-tab active" onclick="switchSource('ALL', this)">🌐 All Evaluated Sources</button>
+            <button class="source-tab" onclick="switchSource('Portal', this)">📱 Portal Submissions</button>
             <button class="source-tab" onclick="switchSource('CSV', this)">📁 Imported CSVs</button>
-            <button class="source-tab" onclick="switchSource('Testing', this)">🧪 AI Testing Logs</button>
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            <button class="source-tab" onclick="switchSource('Testing', this)">🧪 Benchmark &amp; Testing Logs</button>
             {% endif %}
         </div>
 
         <!-- Controls Toolbar: Program/Sentiment Tabs + Term/Year Filter -->
         <div class="controls-toolbar" id="dataSortBarTarget">
-            {% if role == 'MISD' %}
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
             <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
                 <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                     <!-- New Tab Row 1: Program Sort -->
@@ -865,13 +1099,14 @@
                         <button class="dept-tab" onclick="switchProgram('BSIT', this)">BSIT</button>
                     </div>
 
-                    <!-- New Tab Row 2: Sentiment Sort -->
+                    <!-- New Tab Row 2: Sentiment Sort + Binary Actionable Toggle -->
                     <div class="dept-filter-bar">
                         <span class="filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>Sentiment</span>
                         <button class="dept-tab active" onclick="switchSentiment('ALL', this)">All Sentiments</button>
                         <button class="dept-tab" style="color:var(--badge-pos);" onclick="switchSentiment('Positive', this)">Positive</button>
                         <button class="dept-tab" style="color:var(--badge-neg);" onclick="switchSentiment('Negative', this)">Negative</button>
                         <button class="dept-tab" style="color:var(--badge-neu);" onclick="switchSentiment('Neutral', this)">Neutral</button>
+                        <button class="dept-tab" id="btnBinaryMode" style="color:#38bdf8;" onclick="toggleBinaryMode(this)" title="Compare Positive vs. Negative directly by excluding Neutral remarks">⚖️ Pos vs. Neg Only</button>
                     </div>
                 </div>
             </div>
@@ -896,7 +1131,7 @@
                     <option value="2nd Semester">2nd Semester</option>
                 </select>
 
-                {% if role == 'MISD' %}
+                {% if role in ['Developer', 'MISD', 'Admin'] %}
                 <button class="btn-nav" onclick="setAsActiveTerm()" style="border-color:rgba(16,185,129,0.4); color:#34d399;" title="Set the selected Year & Semester as the active institutional term for all new posts">📌 Set Active Term</button>
                 <button class="btn-nav" onclick="openAddYearModal()" style="border-color:rgba(37,99,235,0.4); color:var(--txt-blue);">+ Add Year</button>
                 {% endif %}
@@ -939,48 +1174,60 @@
         </section>
 
         <!-- Evaluation Console + Visualizations -->
-        <div class="main-grid" {% if role == 'MISD' %}style="grid-template-columns: 1.1fr 1fr;"{% else %}style="grid-template-columns: 1fr;"{% endif %}>
+        <div class="main-grid" style="grid-template-columns: 1.08fr 1fr;">
             
-            {% if role == 'MISD' %}
-            <!-- Diagnostic Sandbox (MISD Only) -->
-            <section class="panel" id="narrativePanelTarget">
-                <div class="panel-heading">
-                    <span>AI Testing Tool</span>
-                    <span style="font-size:0.75rem; color:var(--text-muted);">MISD Clearance Only</span>
+            <!-- Total Evaluated Responses Overview Card (Clickable for Full Breakdown Modal) -->
+            <section class="panel overview-summary-card" id="narrativePanelTarget" onclick="openTotalSummaryModal()" role="button" tabindex="0" title="Click to open the full quantitative summary breakdown across all responses">
+                <div class="panel-heading" style="margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:1.05rem;">📑 Total Summary of Evaluated Responses</span>
+                    </div>
+                    <span class="badge" style="background:rgba(14,165,233,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); cursor:pointer;">
+                        🔍 Click for Full Breakdown ↗
+                    </span>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.3fr; gap: 8px; margin-bottom: 10px;">
-                    <select id="singleProgram" class="select-input" style="margin-bottom:0;">
-                        <option value="BSCS">BSCS</option>
-                        <option value="BSIT">BSIT</option>
-                    </select>
-                    <select id="singleYear" class="select-input" style="margin-bottom:0;"></select>
-                    <select id="singleSem" class="select-input" style="margin-bottom:0;">
-                        <option value="1st Semester">1st Sem</option>
-                        <option value="2nd Semester">2nd Sem</option>
-                    </select>
-                    <select id="singleExpectedSentiment" class="select-input" style="margin-bottom:0;" title="Optional: Tag expected ground-truth sentiment to include in Confusion Matrix">
-                        <option value="">Ground Truth: Auto (None)</option>
-                        <option value="Positive">Expected: Positive</option>
-                        <option value="Neutral">Expected: Neutral</option>
-                        <option value="Negative">Expected: Negative</option>
-                    </select>
+                <div id="overviewNarrativeBox" style="background:rgba(7,13,29,0.55); border:1px solid var(--border-light); border-left:4px solid #0ea5e9; border-radius:12px; padding:12px 14px; font-size:0.83rem; line-height:1.55; color:var(--text-body); margin-bottom:14px;">
+                    Synthesizing quantitative summary across all evaluated student feedback...
                 </div>
 
-                <textarea id="singleComment" class="textarea-input" placeholder="Test individual student comments here to see how the AI scores words and determines sentiment..."></textarea>
-                <button class="btn-action" onclick="submitSingleFeedback()">Test AI Analysis</button>
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:14px;">
+                    <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:12px; padding:10px 12px; text-align:center;">
+                        <div style="font-size:0.68rem; font-weight:800; text-transform:uppercase; color:#34d399;">Positive Share</div>
+                        <div style="font-size:1.35rem; font-weight:900; color:#10b981; margin-top:2px;" id="ovPosPct">0.0%</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);" id="ovPosBinarySub">Binary: 0.0%</div>
+                    </div>
+                    <div style="background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.25); border-radius:12px; padding:10px 12px; text-align:center;">
+                        <div style="font-size:0.68rem; font-weight:800; text-transform:uppercase; color:#fb7185;">Negative Share</div>
+                        <div style="font-size:1.35rem; font-weight:900; color:#f43f5e; margin-top:2px;" id="ovNegPct">0.0%</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);" id="ovNegBinarySub">Binary: 0.0%</div>
+                    </div>
+                    <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:10px 12px; text-align:center;">
+                        <div style="font-size:0.68rem; font-weight:800; text-transform:uppercase; color:#fbbf24;">All-Source Total</div>
+                        <div style="font-size:1.35rem; font-weight:900; color:var(--text-title); margin-top:2px;" id="ovGrandTotal">0</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);" id="ovNeutralSub">Neutral: 0.0%</div>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:auto;">
+                    <span style="font-size:0.75rem; color:var(--text-muted);" id="ovTopAspectHint">
+                        Dominant Aspect: Evaluating...
+                    </span>
+                    <button type="button" class="btn-action" onclick="event.stopPropagation(); openTotalSummaryModal();" style="padding:9px 16px; font-size:0.8rem;">
+                        📊 View Full Evaluated Data Summary
+                    </button>
+                </div>
             </section>
-            {% endif %}
 
             <!-- Multi-Dimensional Scorecard -->
             <section class="panel" id="scorecardPanelTarget">
                 <div class="panel-heading">
                     <span>Feedback Category Overview</span>
                     <span style="font-size:0.75rem; color:var(--text-muted);" id="currentDeptLabel">
-                        {% if role == 'MISD' %}DCI OVERVIEW{% else %}DCI — {{ user_program }}{% endif %}
+                        {% if role in ['Developer', 'MISD', 'Admin'] %}ALL PROGRAMS OVERVIEW{% else %}PROGRAM — {{ user_program }}{% endif %}
                     </span>
                 </div>
-                <div class="charts-double" {% if role != 'MISD' %}style="grid-template-columns: 1fr 1fr; max-width: 860px; margin: 0 auto;"{% endif %}>
+                <div class="charts-double" {% if role not in ['Developer', 'MISD', 'Admin'] %}style="grid-template-columns: 1fr 1fr; max-width: 860px; margin: 0 auto;"{% endif %}>
                     <div class="chart-box">
                         <img id="pieChartImg" src="" alt="Polarity Doughnut Chart">
                     </div>
@@ -1023,7 +1270,7 @@
                         <tr>
                             <th style="width:9%;">Program</th>
                             <th style="width:13%;">Academic Term</th>
-                            <th style="width:32%;">Student Narrative</th>
+                            <th style="width:34%;">Student Narrative &amp; Why Positive / Negative</th>
                             <th style="width:10%;">Polarity</th>
                             <th style="width:36%;">Aspects & Word Impact Scaling (-1, 0, 1)</th>
                         </tr>
@@ -1042,7 +1289,8 @@
                 </div>
             </div>
         </section>
-    </main>
+        </main>
+    </div>
 
     <script>
         // SECURITY FIX: XSS Protection and URL Sanitization
@@ -1349,7 +1597,10 @@
         let currentPage = 1;
         const perPage = 10;
         let currentSearch = "";
-        let currentSource = "Portal";
+        let currentSource = "ALL";
+        let binaryOnlyMode = false;
+        let latestSummaryOverview = null;
+        const isDev = ["Developer", "MISD", "Admin"].includes(userRole);
         
         let currentProgram = "ALL";
         let currentSentiment = "ALL";
@@ -1441,7 +1692,7 @@
         });
 
         function openAddYearModal() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             const m = document.getElementById('addYearModal');
             if (m) {
                 document.getElementById('newYearInput').value = '';
@@ -1453,7 +1704,7 @@
         }
 
         async function submitNewYear() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             const val = document.getElementById('newYearInput').value.trim();
             if (!val) return showToast("Please input an academic year.", "warning");
 
@@ -1480,7 +1731,7 @@
         }
 
         async function setAsActiveTerm() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             const yr = document.getElementById('filterYear')?.value;
             const sem = document.getElementById('filterSem')?.value;
             if (!yr || yr === 'ALL' || !sem || sem === 'ALL') {
@@ -1546,14 +1797,161 @@
             currentPage = 1;
             btn.parentElement.querySelectorAll('.dept-tab').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            let txt = "DCI OVERVIEW";
-            if(prog !== 'ALL') txt = `DCI — ${prog}`;
+            let txt = "ALL PROGRAMS OVERVIEW";
+            if(prog !== 'ALL') txt = `PROGRAM — ${prog}`;
             document.getElementById('currentDeptLabel').innerText = txt;
             fetchAnalytics();
         }
 
         // NEW SORTING: Sentiment Filter
+
+        function highlightNarrativeTokens(rawText, aspects) {
+            let safe = esc(rawText || '');
+            const tokenMap = {};
+            (aspects || []).forEach(a => {
+                (a.token_scores || []).forEach(t => {
+                    const w = String(t.word || '').toLowerCase();
+                    if (!w || w.length < 2) return;
+                    if (t.final_score > 0) tokenMap[w] = 'hl-pos';
+                    else if (t.final_score < 0) tokenMap[w] = 'hl-neg';
+                    else if (String(t.role || '').includes('Intensifier')) tokenMap[w] = 'hl-amp';
+                    else if (String(t.role || '').includes('Negator') || String(t.role || '').includes('Sarcasm')) tokenMap[w] = 'hl-inv';
+                });
+            });
+            const words = Object.keys(tokenMap).sort((a, b) => b.length - a.length);
+            if (!words.length) return safe;
+            const pattern = new RegExp('\\b(' + words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'gi');
+            return safe.replace(pattern, (match) => {
+                const cls = tokenMap[match.toLowerCase()];
+                return cls ? `<span class="${cls}">${match}</span>` : match;
+            });
+        }
+
+        function renderOverviewCard(ov) {
+            if (!ov) return;
+            const narBox = document.getElementById('overviewNarrativeBox');
+            if (narBox) narBox.textContent = ov.narrative || '';
+            const posEl = document.getElementById('ovPosPct');
+            if (posEl) posEl.textContent = `${ov.pos_pct}% (${ov.scope_pos})`;
+            const negEl = document.getElementById('ovNegPct');
+            if (negEl) negEl.textContent = `${ov.neg_pct}% (${ov.scope_neg})`;
+            const grandEl = document.getElementById('ovGrandTotal');
+            if (grandEl) grandEl.textContent = `${ov.scope_total} / ${ov.grand_total}`;
+            const posBin = document.getElementById('ovPosBinarySub');
+            if (posBin) posBin.textContent = `Pos vs Neg: ${ov.binary_pos_pct}%`;
+            const negBin = document.getElementById('ovNegBinarySub');
+            if (negBin) negBin.textContent = `Pos vs Neg: ${ov.binary_neg_pct}%`;
+            const neuSub = document.getElementById('ovNeutralSub');
+            if (neuSub) neuSub.textContent = `Neutral: ${ov.neu_pct}% (${ov.scope_neu})`;
+            const topHint = document.getElementById('ovTopAspectHint');
+            if (topHint) topHint.innerHTML = `🏆 Top Positive: <strong style="color:#34d399;">${esc(ov.top_pos_aspect)}</strong> &bull; ⚠️ Top Concern: <strong style="color:#fb7185;">${esc(ov.top_neg_aspect)}</strong>`;
+        }
+
+        function openTotalSummaryModal() {
+            const ov = latestSummaryOverview;
+            if (ov) {
+                const execEl = document.getElementById('modalExecutiveSummaryText');
+                if (execEl) execEl.textContent = ov.narrative;
+                document.getElementById('sumScopeTotal').textContent = ov.scope_total;
+                document.getElementById('sumAllSourcesSub').textContent = `Grand Total Across All Sources: ${ov.grand_total}`;
+                document.getElementById('sumScopePos').textContent = `${ov.scope_pos} (${ov.pos_pct}%)`;
+                document.getElementById('sumBinaryPosSub').textContent = `Binary (Excl. Neutral): ${ov.binary_pos_pct}%`;
+                document.getElementById('sumScopeNeg').textContent = `${ov.scope_neg} (${ov.neg_pct}%)`;
+                document.getElementById('sumBinaryNegSub').textContent = `Binary (Excl. Neutral): ${ov.binary_neg_pct}%`;
+                document.getElementById('sumScopeNeu').textContent = `${ov.scope_neu} (${ov.neu_pct}%)`;
+
+                const progBody = document.getElementById('sumProgramTableBody');
+                if (progBody) {
+                    const progs = ov.by_program || [];
+                    progBody.innerHTML = progs.length ? progs.map(p => {
+                        const pp = p.total ? ((p.pos / p.total) * 100).toFixed(1) : '0.0';
+                        const np = p.total ? ((p.neg / p.total) * 100).toFixed(1) : '0.0';
+                        return `<tr>
+                            <td style="padding:10px;"><strong style="color:var(--text-title);">${esc(p.program)}</strong></td>
+                            <td style="padding:10px; font-weight:700;">${p.total}</td>
+                            <td style="padding:10px; color:#10b981; font-weight:700;">${p.pos} (${pp}%)</td>
+                            <td style="padding:10px; color:#f43f5e; font-weight:700;">${p.neg} (${np}%)</td>
+                            <td style="padding:10px; color:#fbbf24;">${p.neu}</td>
+                        </tr>`;
+                    }).join('') : '<tr><td colspan="5" style="text-align:center; padding:14px;">No program records yet.</td></tr>';
+                }
+
+                const aspBody = document.getElementById('sumAspectTableBody');
+                if (aspBody) {
+                    const asps = ov.by_aspect || [];
+                    aspBody.innerHTML = asps.map(a => {
+                        const pp = a.total ? ((a.pos / a.total) * 100).toFixed(1) : '0.0';
+                        const np = a.total ? ((a.neg / a.total) * 100).toFixed(1) : '0.0';
+                        return `<tr>
+                            <td style="padding:10px;"><strong style="color:var(--text-title);">${esc(a.aspect)}</strong></td>
+                            <td style="padding:10px; font-weight:700;">${a.total}</td>
+                            <td style="padding:10px; color:#10b981; font-weight:700;">${a.pos} (${pp}%)</td>
+                            <td style="padding:10px; color:#f43f5e; font-weight:700;">${a.neg} (${np}%)</td>
+                            <td style="padding:10px; color:#fbbf24;">${a.neu}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                const termBody = document.getElementById('sumTermTableBody');
+                if (termBody) {
+                    const terms = ov.by_term || [];
+                    termBody.innerHTML = terms.length ? terms.map(t => {
+                        const verdict = t.pos > t.neg ? '<span class="badge badge-Positive">Net Positive</span>' : (t.neg > t.pos ? '<span class="badge badge-Negative">Needs Attention</span>' : '<span class="badge badge-Neutral">Balanced</span>');
+                        return `<tr>
+                            <td style="padding:10px;"><strong style="color:var(--text-title);">${esc(t.term)}</strong></td>
+                            <td style="padding:10px; font-weight:700;">${t.total}</td>
+                            <td style="padding:10px; color:#10b981; font-weight:700;">${t.pos}</td>
+                            <td style="padding:10px; color:#f43f5e; font-weight:700;">${t.neg}</td>
+                            <td style="padding:10px; color:#fbbf24;">${t.neu}</td>
+                            <td style="padding:10px;">${verdict}</td>
+                        </tr>`;
+                    }).join('') : '<tr><td colspan="6" style="text-align:center; padding:14px;">No semester records yet.</td></tr>';
+                }
+            }
+            openModal('totalSummaryModal');
+        }
+
+        function closeTotalSummaryModal() {
+            closeModal('totalSummaryModal');
+        }
+
+        function downloadCsvTemplate() {
+            const csvContent = [
+                'Program,Academic_Year,Semester,Feedback',
+                'BSCS,2026-2027,1st Semester,"Sobrang husay at napakalinaw magpaliwanag ng instructor namin sa Data Structures."',
+                'BSIT,2026-2027,1st Semester,"Mabilis ang mga bagong computer units at malamig ang aircon sa networking laboratory."',
+                'BSCS,2026-2027,1st Semester,"Ang galing magturo ni sir sobrang linaw eme, wala talaga kaming naintindihan buong klase."'
+            ].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'leximetrix_feedback_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+            showToast('Downloaded CSV layout template (leximetrix_feedback_template.csv).', 'success');
+        }
+
+        function toggleBinaryMode(btn) {
+            binaryOnlyMode = !binaryOnlyMode;
+            if (binaryOnlyMode) {
+                currentSentiment = 'ALL';
+                btn.parentElement.querySelectorAll('.dept-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                showToast('Actionable Binary Mode enabled: comparing Positive vs. Negative directly (Neutral hidden).', 'info');
+            } else {
+                btn.classList.remove('active');
+                const allBtn = btn.parentElement.querySelector('.dept-tab');
+                if (allBtn) allBtn.classList.add('active');
+                showToast('3-Class Mode restored (Positive, Neutral, and Negative).', 'info');
+            }
+            currentPage = 1;
+            fetchAnalytics();
+        }
+
         function switchSentiment(sent, btn) {
+            binaryOnlyMode = false;
             currentSentiment = sent;
             currentPage = 1;
             btn.parentElement.querySelectorAll('.dept-tab').forEach(b => b.classList.remove('active'));
@@ -1605,6 +2003,7 @@
                     page: currentPage,
                     per_page: perPage,
                     source: currentSource,
+                    binary: binaryOnlyMode ? '1' : '0',
                     theme: currentTheme()
                 });
 
@@ -1634,6 +2033,11 @@
                 document.getElementById('kpi-pos').innerText = data.kpis.pos;
                 document.getElementById('kpi-neg').innerText = data.kpis.neg;
                 document.getElementById('kpi-neu').innerText = data.kpis.neu;
+
+                if (data.summary_overview) {
+                    latestSummaryOverview = data.summary_overview;
+                    renderOverviewCard(data.summary_overview);
+                }
 
                 const pTag = document.getElementById('prescriptiveTag');
                 const pText = document.getElementById('prescriptiveText');
@@ -1796,6 +2200,8 @@
                     polarityHtml += `<br><span class="badge badge-Sarcasm" style="margin-top: 6px;" title="Sarcasm or linguistic irony detected in phrase">🃏 Sarcasm Detected</span>`;
                 }
 
+                const highlightedComment = highlightNarrativeTokens(item.raw_text, item.aspects);
+                const whyReasonText = item.why_reason || (`Why ${item.sentiment}: Classified via hybrid XLM-RoBERTa & Taglish Lexicon (${Math.round((item.confidence || 0.75)*100)}% confidence).`);
                 const tr = document.createElement('tr');
                 tr.onclick = () => openAlgorithmInspector(item.id);
                 tr.innerHTML = `
@@ -1804,7 +2210,13 @@
                         ${esc(item.academic_year || '2026-2027')}<br>
                         ${esc(item.semester || '1st Sem')}
                     </td>
-                    <td data-label="Comment" style="color:var(--text-body); font-size:0.84rem;">"${esc(item.raw_text)}"</td>
+                    <td data-label="Comment" style="color:var(--text-body); font-size:0.85rem;">
+                        <div style="line-height:1.55;">"${highlightedComment}"</div>
+                        <div class="why-reason-box why-${esc(item.sentiment)}">
+                            <span>💡</span>
+                            <span>${esc(whyReasonText)}</span>
+                        </div>
+                    </td>
                     <td data-label="Polarity">${polarityHtml}</td>
                     <td data-label="AI breakdown">${aspectsHTML}</td>
                 `;
@@ -1891,7 +2303,7 @@
         let currentInspectedLogId = null;
 
         function syncOverrideModalUI(log) {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             const statusText = document.getElementById('modalVerifyStatusText');
             const resetBtn = document.getElementById('btnResetOverride');
             const aiOrig = log.ai_sentiment || log.sentiment;
@@ -1921,7 +2333,7 @@
         }
 
         async function submitSentimentOverride(newSentiment) {
-            if (userRole !== 'MISD' || !currentInspectedLogId) return;
+            if (!isDev || !currentInspectedLogId) return;
             showLoader(`Saving ground-truth label (${newSentiment})...`);
             try {
                 const res = await apiFetch(`/api/feedback/${currentInspectedLogId}/override`, {
@@ -1954,7 +2366,7 @@
         }
 
         async function resetSentimentOverride() {
-            if (userRole !== 'MISD' || !currentInspectedLogId) return;
+            if (!isDev || !currentInspectedLogId) return;
             showLoader("Resetting to original AI prediction...");
             try {
                 const res = await apiFetch(`/api/feedback/${currentInspectedLogId}/override`, {
@@ -1989,7 +2401,7 @@
         let currentEvalMode = 'verified';
 
         function openModelEvalModal() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             openModal('modelEvalModal');
             loadModelEvaluation(currentEvalMode);
         }
@@ -2008,7 +2420,7 @@
         }
 
         async function loadModelEvaluation(mode) {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             showLoader(mode === 'benchmark' ? "Running 30-item Taglish benchmark through XLM-RoBERTa + Lexicon..." : "Computing Confusion Matrix & F1 metrics...");
             try {
                 const res = await apiFetch(`/api/model_evaluation?mode=${encodeURIComponent(mode)}`, {}, 60000);
@@ -2092,7 +2504,7 @@
         }
 
         async function seedBenchmarkSuite() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             showLoader("Evaluating & seeding 30 Taglish gold-standard test cases...", 60000);
             try {
                 const res = await apiFetch('/api/model_evaluation/seed_benchmark', {
@@ -2115,7 +2527,7 @@
         }
 
         async function submitSingleFeedback() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             const commentInput = document.getElementById('singleComment');
             const progInput = document.getElementById('singleProgram');
             const yearInput = document.getElementById('singleYear');
@@ -2166,7 +2578,6 @@
         let csvPreview = null, csvBatchId = null, csvBusy = false, csvMapTimer = null;
 
         function openCsvModal() {
-            if (userRole !== 'MISD') return;
             const modal = document.getElementById('csvModal');
             if (modal) { resetCsvPreview(); openModal('csvModal'); loadCsvHistory(); }
         }
@@ -2196,7 +2607,6 @@
         }
 
         async function previewCsv(keepMapping) {
-            if (userRole !== 'MISD') return;
             const input = document.getElementById('csvFileInput');
             if (!input || !input.files.length) return showToast("Please choose a CSV file.", "warning");
             const btn = document.getElementById('csvPrimaryBtn');
@@ -2339,7 +2749,7 @@
         }
 
         function openLexiconModal() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             openModal('lexiconModal');
             fetchLexicon();
         }
@@ -2349,7 +2759,7 @@
         }
 
         async function fetchLexicon() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             try {
                 const res = await apiFetch('/api/lexicon');
                 const data = await readJson(res, "Could not load data.");
@@ -2372,7 +2782,7 @@
         }
 
         async function addLexiconTerm() {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             const wordInput = document.getElementById('newWord');
             const catInput = document.getElementById('newCategory');
             if (!wordInput || !catInput) return;
@@ -2405,7 +2815,7 @@
         }
 
         async function deleteLexiconTerm(id) {
-            if (userRole !== 'MISD') return;
+            if (!isDev) return;
             showLoader("Removing lexicon term...");
             try {
                 const res = await apiFetch('/api/lexicon', {
@@ -2435,31 +2845,28 @@
         }
 
         // ==========================================================
-        // GUIDED TOUR (first-time question + replay button)
+        // GUIDED TOUR (Updated for LexiMetrix Redesign & Validator Features)
         // ==========================================================
+        const DEV_ROLES = ['Developer', 'MISD', 'Admin'];
         const TOUR_ALL_STEPS = [
-            { title: "Welcome to the Oversight Dashboard", body: "This page turns anonymous student feedback into clear summaries and action items. In about a minute, you'll see how to <strong>filter feedback</strong>, read the <strong>early warning alerts</strong>, check the <strong>charts</strong>, and <strong>review individual comments</strong>." },
-            { target: ".source-filter-bar", title: "1. Choose Where the Data Comes From", body: "Switch between <strong>📱 Portal Submissions</strong> (posts and surveys from students), <strong>📁 Imported CSVs</strong> (spreadsheet files you uploaded), and <strong>🧪 AI Testing Logs</strong> (sample sentences you tested yourself).", roles: ['MISD'] },
-            { target: "#dataSortBarTarget", title: "2. Filter by Program & Feeling", body: "Click <strong>BSCS</strong> or <strong>BSIT</strong> to focus on one program, or click <strong>Positive</strong>, <strong>Negative</strong>, or <strong>Neutral</strong> to filter all numbers, charts, and comments on the page.", roles: ['MISD'] },
-            { target: "#termFilterTarget", title: "3. School Year & Semester", body: "Use these menus to view a specific school year and semester. Click <strong>📌 Set Active Term</strong> to set which semester new student posts are saved under, or click <strong>+ Add Year</strong> to add a new school year.", roles: ['MISD'] },
-            { target: "#termFilterTarget", title: "1. School Year & Semester", body: "Use these menus to view feedback from a specific school year and semester. The <strong>📌 Active</strong> badge shows the current term.", notRoles: ['MISD'] },
-            { target: "#prescriptiveBoxTarget", title: "Early Warning Alerts", body: "Watches student concerns automatically. Whenever <strong>40% or more</strong> of the feedback in an area (Teaching, Approachability, or Facilities) is negative, a suggested action appears here." },
-            { target: "#kpiRowTarget", title: "Quick Summary Numbers", body: "Shows the total number of comments along with how many are Positive, Negative, or Neutral. (If fewer than 5 students match a filter, details stay hidden so individual students cannot be identified.)" },
-            { target: "#narrativePanelTarget", title: "Test the AI Yourself", body: "Type any sample sentence in English, Tagalog, or Taglish (including slang or <em>'eme/charot'</em> jokes) to see how the AI scores it. You can also pick an <strong>Expected</strong> result if you want to check whether the AI got it right.", roles: ['MISD'] },
-            { target: "#scorecardPanelTarget", title: "Visual Charts", body: "The ring chart shows the overall mix of positive, neutral, and negative feedback. The bar chart breaks it down by topic: <strong>Pedagogy</strong> (teaching), <strong>Demeanor</strong> (approachability), and <strong>Facilities</strong> (rooms, Wi-Fi, labs)." },
-            { target: "#keywordCloudTarget", title: "Most Mentioned Words", body: "Shows the words students use the most. <strong>Tap any word</strong> to filter the table below to comments that mention it." },
-            { target: "#logsPanelTarget", title: "Read Comments & Verify the AI", body: "Search for any word or program. <strong>Tap any row</strong> to see how each word was scored, and click <strong>Confirm / Set Positive, Neutral, or Negative</strong> if you want to approve or correct the AI's rating.", roles: ['MISD'] },
-            { target: "#logsPanelTarget", title: "Read Comments & See Why", body: "Search for any word or program, and <strong>tap any row</strong> to see how each word and phrase affected the AI's rating.", notRoles: ['MISD'] },
-            { target: "#evalNavBtn", title: "Check AI Accuracy", body: "Tap <strong>📊 AI Evaluation (F1)</strong> to see a summary scorecard of how often the AI agrees with your verified ratings, or test it against <strong>30 built-in Taglish sample sentences</strong> in one click.", roles: ['MISD'] },
-            { target: "#navActionsTarget", title: "Upload, Download & Slang Dictionary", body: "<strong>Upload CSV</strong> imports survey spreadsheets (with an Undo button if needed). <strong>Export CSV</strong> downloads what you're viewing. <strong>Slang Manager</strong> lets you teach the AI new campus slang words.", roles: ['MISD'] },
-            { target: "#navActionsTarget", title: "Download Report", body: "Click <strong>Export CSV</strong> to download the feedback records you are currently viewing as a spreadsheet.", notRoles: ['MISD'] },
-            { target: "#themeToggle", title: "Light or Dark Mode", body: "Switch between dark and light mode anytime to match what is easiest on your eyes." },
-            { title: "You're All Set!", body: "You stay signed in until you press <strong>Sign Out</strong>. You can replay this guide anytime on a computer or phone using the <strong>❓ Tour</strong> button at the top." }
+            { title: "Welcome to LexiMetrix Analytics", body: "This workspace converts English, Tagalog, and Taglish student feedback into quantitative metrics, aspect breakdowns, and explainable AI insights. Let's take a quick tour of the updated layout!" },
+            { target: ".lx-sidebar", title: "1. Quick Workspace Sidebar", body: "Jump straight to the <strong>Total Summary Report</strong>, <strong>Explainable Feedback Logs</strong>, <strong>CSV Upload & Template</strong>, <strong>Taglish Lexicon Studio</strong>, or switch to the <strong>🏛️ Student Feedback Portal</strong> (with a 1-click button to return here anytime)." },
+            { target: ".source-filter-bar", title: "2. Filter by Data Source", body: "View <strong>🌐 All Evaluated Sources</strong> combined, or isolate <strong>📱 Portal Submissions</strong>, <strong>📁 Imported CSVs</strong>, and <strong>🧪 Benchmark & Testing Logs</strong>." },
+            { target: "#dataSortBarTarget", title: "3. Program, Polarity & Binary Mode", body: "Filter by <strong>BSCS</strong> or <strong>BSIT</strong>, filter by sentiment, or click <strong>⚖️ Pos vs. Neg Only</strong> to compare Positive and Negative feedback head-to-head with Neutral remarks excluded.", roles: DEV_ROLES },
+            { target: "#termFilterTarget", title: "4. Academic Year & Semester Controls", body: "Filter records by Academic Year and Semester. Developers can also click <strong>📌 Set Active Term</strong> or <strong>+ Add Year</strong> to manage evaluation cycles.", roles: DEV_ROLES },
+            { target: "#termFilterTarget", title: "3. Academic Year & Semester Controls", body: "Use these dropdowns to filter feedback across specific school years and semesters.", notRoles: DEV_ROLES },
+            { target: "#narrativePanelTarget", title: "5. Total Summary of Evaluated Responses", body: "This interactive overview card synthesizes all evaluated responses into an executive summary and shows both 3-class and binary shares. <strong>Click anywhere on this card</strong> to open the full breakdown tables by Program, Aspect, and Semester (plus the Developer single-sentence test sandbox)!" },
+            { target: "#scorecardPanelTarget", title: "6. Polarity & Aspect Visualizations", body: "The doughnut chart displays overall sentiment proportions, while the stacked bar chart disaggregates feedback across <strong>Pedagogy</strong> (Teaching Style), <strong>Demeanor</strong> (Attitude), and <strong>Facilities</strong>." },
+            { target: "#keywordCloudTarget", title: "7. Recurring Lexicon Cloud", body: "Highlights the most frequent words in student comments. <strong>Click any word chip</strong> to filter the feedback logs below." },
+            { target: "#logsPanelTarget", title: "8. Explainable Logs ('Why Positive / Why Negative')", body: "Every feedback row automatically highlights <strong>positive words in green</strong>, <strong>negative words in red</strong>, and <strong>sarcasm flips ('eme/charot') in violet</strong>, with a <strong>💡 Why Positive / Why Negative</strong> reason banner underneath. Click any row for full word weights or to verify/override its label." },
+            { target: "#evalNavBtn", title: "9. Confusion Matrix & F1-Score Validation", body: "Click <strong>📊 AI Evaluation (F1)</strong> to inspect the 3×3 Confusion Matrix, Macro Precision, Recall, and F1-Score, or seed the 30-item Taglish Gold Benchmark.", roles: DEV_ROLES },
+            { target: "#navActionsTarget", title: "10. CSV Batch Upload & Layout Template", body: "Click <strong>📥 Upload CSV & Template</strong> to download the ready-made 4-column CSV layout template (<code>Program, Academic_Year, Semester, Feedback</code>) or upload batch datasets with smart fallback defaults." },
+            { title: "You're Ready to Present!", body: "You can replay this interactive guide anytime by clicking <strong>❓ Tour</strong> in the top bar or <strong>❓ Interactive Guide</strong> in the left sidebar." }
         ];
         CCCTour.configure({
             steps: TOUR_ALL_STEPS.filter(st => (!st.roles || st.roles.includes(userRole)) && !(st.notRoles && st.notRoles.includes(userRole))),
             seen: {{ tour_seen | tojson }},
-            appName: 'the oversight dashboard',
+            appName: 'the LexiMetrix Analytics Dashboard',
             userName: {{ username | tojson | safe }},
             csrf: (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
             seenEndpoint: '/api/tutorial/seen'

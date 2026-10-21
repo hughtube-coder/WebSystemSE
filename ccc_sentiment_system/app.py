@@ -120,11 +120,11 @@ def send_verification_email(recipient_email, code, username, purpose="verify"):
         is_reset = (purpose == "reset")
         msg = EmailMessage()
         msg['Subject'] = (
-            "City College of Calamba — Password Reset Code"
+            "LexiMetrix — Password Reset Code"
             if is_reset else
-            "City College of Calamba — Community Portal Passcode"
+            "LexiMetrix — Evaluation Portal Passcode"
         )
-        msg['From'] = f"CCC Community Feedback Collective <{MAIL_SENDER}>"
+        msg['From'] = f"LexiMetrix Evaluation Engine <{MAIL_SENDER}>"
         msg['To'] = recipient_email
         safe_username = html.escape(username)
         action_line = (
@@ -139,8 +139,8 @@ def send_verification_email(recipient_email, code, username, purpose="verify"):
         <head><meta charset="utf-8"></head>
         <body style="font-family: -apple-system, sans-serif; background-color: #070d1d; color: #f8fafc; padding: 30px; margin: 0;">
             <div style="max-width: 500px; margin: 0 auto; background: #0f1a30; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; text-align: center;">
-                <h2 style="color: #60a5fa; margin: 0 0 6px 0; font-size: 20px;">City College of Calamba</h2>
-                <p style="color: #94a3b8; font-size: 12px; text-transform: uppercase;">Participatory Student Feedback Collective</p>
+                <h2 style="color: #38bdf8; margin: 0 0 6px 0; font-size: 20px;">LexiMetrix</h2>
+                <p style="color: #94a3b8; font-size: 12px; text-transform: uppercase;">Multilingual NLP Feedback Evaluation Engine</p>
                 <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 18px 0;"></div>
                 <p style="color: #cbd5e1; font-size: 14px; text-align: left;">Hello <strong>{safe_username}</strong>,</p>
                 <p style="color: #cbd5e1; font-size: 14px; text-align: left;">{action_line}</p>
@@ -236,7 +236,7 @@ def csrf_error(e):
     if request.path.startswith("/api/"):
         return jsonify({"error": "Session expired or invalid CSRF token. Reload the page."}), 400
     if current_user.is_authenticated:
-        return redirect(url_for('student_portal') if current_user.role.startswith("Student") else url_for('dashboard')) 
+        return redirect(url_for('student_portal') if _is_student() else url_for('dashboard')) 
     return render_template("auth.html", error="Session expired. Please log in again.", mode="login"), 400
 
 FRIENDLY_HTTP = {
@@ -574,20 +574,20 @@ def seed_database():
     if not db.session.get(SystemSetting, "active_semester"):
         db.session.add(SystemSetting(key="active_semester", value="1st Semester"))
 
-    # Auto-provision MISD account on cloud hosts (e.g. Render Free Tier where interactive shell is unavailable)
-    misd_pwd = os.getenv("MISD_PASSWORD", "").strip()
-    if misd_pwd:
-        misd_user = os.getenv("MISD_USERNAME", "misd_admin").strip() or "misd_admin"
-        misd_email = os.getenv("MISD_EMAIL", "misd@ccc.edu.ph").strip().lower() or "misd@ccc.edu.ph"
-        existing_misd = User.query.filter((User.username == misd_user) | (User.email == misd_email)).first()
-        if existing_misd:
-            existing_misd.role = "MISD"
-            existing_misd.is_verified = True
-            existing_misd.set_password(misd_pwd)
+    # Auto-provision Developer account on cloud hosts (supports both DEV_* and legacy MISD_* env vars)
+    dev_pwd = (os.getenv("DEV_PASSWORD") or os.getenv("MISD_PASSWORD") or "").strip()
+    if dev_pwd:
+        dev_user = (os.getenv("DEV_USERNAME") or os.getenv("MISD_USERNAME") or "misd_admin").strip() or "misd_admin"
+        dev_email = (os.getenv("DEV_EMAIL") or os.getenv("MISD_EMAIL") or "developer@ccc.edu.ph").strip().lower() or "developer@ccc.edu.ph"
+        existing_dev = User.query.filter((User.username == dev_user) | (User.email == dev_email)).first()
+        if existing_dev:
+            existing_dev.role = "Developer"
+            existing_dev.is_verified = True
+            existing_dev.set_password(dev_pwd)
         else:
-            new_misd = User(username=misd_user, email=misd_email, role="MISD", department="DCI", program="ALL", is_verified=True, privacy_consent_at=datetime.utcnow())
-            new_misd.set_password(misd_pwd)
-            db.session.add(new_misd)
+            new_dev = User(username=dev_user, email=dev_email, role="Developer", department="DCI", program="ALL", is_verified=True, privacy_consent_at=datetime.utcnow())
+            new_dev.set_password(dev_pwd)
+            db.session.add(new_dev)
 
     db.session.commit()
 
@@ -621,7 +621,8 @@ def setup_database():
             "UPDATE feedback_records SET ai_sentiment = sentiment WHERE ai_sentiment IS NULL;",
             "UPDATE feedback_records SET program = 'BSIT' WHERE UPPER(TRIM(program)) = 'ACT' OR program ILIKE '%Associate in Computer Technology%';",
             "UPDATE community_posts SET program = 'BSIT' WHERE UPPER(TRIM(program)) = 'ACT' OR program ILIKE '%Associate in Computer Technology%';",
-            "CREATE INDEX IF NOT EXISTS ix_feedback_filters ON feedback_records (department, source, academic_year, semester);"
+            "CREATE INDEX IF NOT EXISTS ix_feedback_filters ON feedback_records (department, source, academic_year, semester);",
+            "UPDATE users SET role = 'Developer' WHERE UPPER(TRIM(role)) = 'MISD';"
         ]
         for q in alter_queries:
             try:
@@ -631,21 +632,37 @@ def setup_database():
                 db.session.rollback()
         seed_database()
 
+@app.cli.command("create-developer")
+@click.option("--username", prompt=True)
+@click.option("--email", prompt=True)
+@click.password_option()
+def create_developer_command(username, email, password):
+    """Creates (or upgrades) a Developer administrator account."""
+    username, email = username.strip(), email.strip().lower()
+    user = User.query.filter((User.username == username) | (User.email == email)).first()
+    if user:
+        user.role = "Developer"; user.is_verified = True; user.set_password(password); action = "updated"
+    else:
+        user = User(username=username, email=email, role="Developer", department="DCI", program="ALL", is_verified=True)
+        user.set_password(password); db.session.add(user); action = "created"
+    db.session.commit()
+    click.echo(f"Developer account '{username}' {action}.")
+
 @app.cli.command("create-misd")
 @click.option("--username", prompt=True)
 @click.option("--email", prompt=True)
 @click.password_option()
 def create_misd_command(username, email, password):
-    """Creates (or upgrades) an MISD administrator. MISD accounts cannot be made from the sign-up page, so run this once on a new server."""
+    """Alias for create-developer."""
     username, email = username.strip(), email.strip().lower()
     user = User.query.filter((User.username == username) | (User.email == email)).first()
     if user:
-        user.role = "MISD"; user.is_verified = True; user.set_password(password); action = "updated"
+        user.role = "Developer"; user.is_verified = True; user.set_password(password); action = "updated"
     else:
-        user = User(username=username, email=email, role="MISD", department="DCI", program="ALL", is_verified=True)
+        user = User(username=username, email=email, role="Developer", department="DCI", program="ALL", is_verified=True)
         user.set_password(password); db.session.add(user); action = "created"
     db.session.commit()
-    click.echo(f"MISD account '{username}' {action}.")
+    click.echo(f"Developer account '{username}' {action}.")
 
 @app.cli.command("mask-existing-profanity")
 def mask_existing_profanity_command():
@@ -1008,12 +1025,12 @@ def verify_hashed_otp(user, code):
 
 @app.route('/')
 def index():
-    if current_user.is_authenticated: return redirect(url_for('student_portal') if current_user.role.startswith("Student") else url_for('dashboard'))
+    if current_user.is_authenticated: return redirect(url_for('student_portal') if _is_student() else url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    if current_user.is_authenticated: return redirect(url_for('student_portal') if current_user.role.startswith("Student") else url_for('dashboard'))
+    if current_user.is_authenticated: return redirect(url_for('student_portal') if _is_student() else url_for('dashboard'))
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -1034,8 +1051,8 @@ def signup():
             return render_template('auth.html', error="Password must be at least 6 characters long.", mode="signup")
         if not email.endswith('@ccc.edu.ph'):
             return render_template('auth.html', error="Registration is restricted to official @ccc.edu.ph institutional email addresses only.", mode="signup")
-        if selected_role == "MISD":
-            return render_template('auth.html', error="MISD Admin accounts must be securely provisioned by the server.", mode="signup")
+        if selected_role.upper() in ("MISD", "DEVELOPER", "ADMIN"):
+            return render_template('auth.html', error="Developer accounts are provisioned directly by the development team.", mode="signup")
 
         existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
         if existing_user:
@@ -1112,7 +1129,7 @@ LOCKOUT_MINUTES = 10
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("20 per minute", exempt_when=_session_active)
 def login():
-    if current_user.is_authenticated: return redirect(url_for('student_portal') if current_user.role.startswith("Student") else url_for('dashboard'))
+    if current_user.is_authenticated: return redirect(url_for('student_portal') if _is_student() else url_for('dashboard'))
 
     if request.method == 'POST':
         login_id = request.form.get('username', '').strip()
@@ -1153,7 +1170,7 @@ def login():
 
                 if pending_share and SHARE_TOKEN_RE.match(str(pending_share)):
                     return redirect(url_for('open_shared_form', token=pending_share))
-                return redirect(url_for('student_portal') if user.role.startswith("Student") else url_for('dashboard'))
+                return redirect(url_for('student_portal') if (str(user.role or '').strip().lower() in ('student', 'student - regular', 'regular student')) else url_for('dashboard'))
             else:
                 user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
                 if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
@@ -1180,7 +1197,7 @@ def login():
 @limiter.limit("5 per hour")
 def forgot_password():
     if current_user.is_authenticated:
-        return redirect(url_for('student_portal') if current_user.role.startswith("Student") else url_for('dashboard'))
+        return redirect(url_for('student_portal') if _is_student() else url_for('dashboard'))
 
     if request.method == 'POST':
         identifier = request.form.get('identifier', '').strip()
@@ -1240,7 +1257,7 @@ GUEST_ONLY_ENDPOINTS = {"signup", "resend_code", "verify_code", "forgot_password
 @app.before_request
 def keep_signed_in_users_inside():
     if request.endpoint in GUEST_ONLY_ENDPOINTS and current_user.is_authenticated:
-        return redirect(url_for('student_portal') if current_user.role.startswith("Student") else url_for('dashboard'))
+        return redirect(url_for('student_portal') if _is_student() else url_for('dashboard'))
 
 _AUTH_PAGE_BOUNCE = (b"<script>(function(){var go=function(){fetch('/api/session_ping',{cache:'no-store',credentials:'same-origin',redirect:'manual'})"
     b".then(function(r){if(r.status===204)location.replace('/');}).catch(function(){});};"
@@ -1281,7 +1298,7 @@ def open_shared_form(token):
         session['pending_share'] = token
         flash("Please sign in to open the survey you were sent.")
         return redirect(url_for('login'))
-    if not current_user.role.startswith("Student"): return redirect(url_for('dashboard'))
+    if not _is_student(): return redirect(url_for('dashboard'))
     form = EvaluationForm.query.filter_by(share_token=token, is_active=True).first()
     return redirect(url_for('student_portal', survey=(form.id if form else 'unavailable')))
 
@@ -1300,6 +1317,137 @@ def mark_tour_seen():
 def healthz():
     """Plain 'the server is up' check for uptime monitors and Docker. It does not touch the database or the model."""
     return Response("ok", mimetype="text/plain")
+
+LEXIMETRIX_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="lxBg" x1="10" y1="10" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="55%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#091526"/>
+    </linearGradient>
+    <linearGradient id="lxStroke" x1="12" y1="12" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="lxBar1" x1="0" y1="88" x2="0" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="lxBar2" x1="0" y1="88" x2="0" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="lxBar3" x1="0" y1="88" x2="0" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="104" height="104" rx="26" fill="url(#lxBg)" stroke="url(#lxStroke)" stroke-width="3.5"/>
+  <path d="M35 32 C28 32 26 35 26 42 L26 52 C26 57 22 60 18 60 C22 60 26 63 26 68 L26 78 C26 85 28 88 35 88" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M85 32 C92 32 94 35 94 42 L94 52 C94 57 98 60 102 60 C98 60 94 63 94 68 L94 78 C94 85 92 88 85 88" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="42" y="58" width="9" height="28" rx="4.5" fill="url(#lxBar1)"/>
+  <rect x="55.5" y="45" width="9" height="41" rx="4.5" fill="url(#lxBar2)"/>
+  <rect x="69" y="32" width="9" height="54" rx="4.5" fill="url(#lxBar3)"/>
+  <path d="M46.5 52 L60 39 L73.5 26" stroke="#f8fafc" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 3" opacity="0.85"/>
+  <circle cx="46.5" cy="52" r="3.5" fill="#fbbf24"/>
+  <circle cx="60" cy="39" r="3.5" fill="#38bdf8"/>
+  <circle cx="73.5" cy="26" r="4.5" fill="#34d399" stroke="#0f172a" stroke-width="1.5"/>
+</svg>"""
+
+@app.route('/leximetrix-logo.svg')
+@app.route('/static/ccclogo.png')
+@limiter.exempt
+def serve_leximetrix_logo():
+    resp = Response(LEXIMETRIX_SVG, mimetype="image/svg+xml")
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
+@app.after_request
+def generalize_html_branding(response):
+    """Automatically updates branding on /student-portal and injects a 'Back to Analytics Dashboard' button for Developers, Faculty, and Officers."""
+    try:
+        if response.mimetype == "text/html" and not response.direct_passthrough and request.path.startswith("/student-portal"):
+            body = response.get_data(as_text=True)
+            body = body.replace("City College of Calamba", "LexiMetrix Analytics")
+            body = body.replace("CCC Community", "LexiMetrix Community")
+            body = body.replace("CCC Emblem", "LexiMetrix Emblem")
+            body = body.replace("CCC Logo", "LexiMetrix Logo")
+            body = body.replace("/static/ccclogo.png", "/leximetrix-logo.svg")
+            body = body.replace("ccclogo.png", "leximetrix-logo.svg")
+            body = body.replace("MISD", "Developer")
+
+            if current_user.is_authenticated and not _is_student():
+                back_btn_snippet = """
+                <style>
+                  .lx-back-dash-btn {
+                    background: linear-gradient(135deg, #0ea5e9, #6366f1) !important;
+                    color: #ffffff !important;
+                    border: 1px solid rgba(56, 189, 248, 0.5) !important;
+                    padding: 8px 16px !important;
+                    border-radius: 999px !important;
+                    font-size: 0.8rem !important;
+                    font-weight: 800 !important;
+                    cursor: pointer !important;
+                    text-decoration: none !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    gap: 6px !important;
+                    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.35) !important;
+                    transition: transform 0.2s ease, filter 0.2s ease !important;
+                  }
+                  .lx-back-dash-btn:hover {
+                    transform: translateY(-1px) !important;
+                    filter: brightness(1.12) !important;
+                  }
+                  .lx-floating-dash-pill {
+                    position: fixed;
+                    bottom: 22px;
+                    left: 22px;
+                    z-index: 9998;
+                    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+                    color: #ffffff;
+                    border: 1px solid rgba(255, 255, 255, 0.25);
+                    padding: 11px 18px;
+                    border-radius: 999px;
+                    font-size: 0.82rem;
+                    font-weight: 800;
+                    cursor: pointer;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    box-shadow: 0 14px 32px rgba(2, 6, 23, 0.65), 0 0 0 3px rgba(14, 165, 233, 0.22);
+                  }
+                  .lx-floating-dash-pill:hover {
+                    filter: brightness(1.12);
+                  }
+                </style>
+                <a href="/dashboard" onclick="window._loggingOut=true;" class="lx-floating-dash-pill" title="Return to LexiMetrix Analytics Dashboard">
+                  📊 Back to Analytics Dashboard
+                </a>
+                <script>
+                  document.addEventListener('DOMContentLoaded', function() {
+                    var nav = document.querySelector('.nav-actions') || document.querySelector('header');
+                    if (nav && !document.getElementById('lxTopBackDashBtn')) {
+                      var a = document.createElement('a');
+                      a.id = 'lxTopBackDashBtn';
+                      a.href = '/dashboard';
+                      a.className = 'lx-back-dash-btn';
+                      a.innerHTML = '📊 Back to Dashboard';
+                      a.onclick = function() { window._loggingOut = true; };
+                      nav.insertBefore(a, nav.firstChild);
+                    }
+                  });
+                </script>
+                """
+                if "</body>" in body:
+                    body = body.replace("</body>", back_btn_snippet + "\n</body>", 1)
+            response.set_data(body)
+    except Exception:
+        pass
+    return response
+
 
 @app.route('/api/session_ping', methods=['GET'])
 @login_required
@@ -1360,7 +1508,7 @@ def get_community_feed():
             "author_role": p.author_role or "Student - Regular", "author_name": p.author_name if p.is_announcement else None,
             "is_announcement": bool(p.is_announcement), "program": p.program or "General", "category": p.category or "Campus Facilities & Infrastructure",
             "content": safe_out(p.content or ""), "image_url": p.image_url, "link_url": p.link_url, "is_edited": bool(p.is_edited),
-            "can_edit": bool(p.author_id == current_user.id or current_user.role == 'MISD'), "sentiment": p.sentiment or "Neutral", "confidence": p.confidence or 0.0,
+            "can_edit": bool(p.author_id == current_user.id or _is_dev()), "sentiment": p.sentiment or "Neutral", "confidence": p.confidence or 0.0,
             "aspects": aspects, "score": p.score or 0, "user_vote": user_votes.get(p.id, 0), "comment_count": comment_counts.get(p.id, 0),
             "status": p.status or "Open", "action_note": p.action_note, "action_by": p.action_by,
             "resolution_upvotes": res_counts.get((p.id, 1), 0), "resolution_downvotes": res_counts.get((p.id, -1), 0),
@@ -1390,7 +1538,7 @@ def create_community_post():
     is_announcement = bool(data.get("is_announcement", False))
     if not content or len(content) < 4: return jsonify({"error": "Post must be at least 4 characters long."}), 400
 
-    is_authorized = any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'faculty', 'misd'])
+    is_authorized = any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'faculty', 'developer', 'misd'])
     if is_announcement or target_channel == 'ANNOUNCEMENTS':
         if not is_authorized: return jsonify({"error": "Permission Denied: Only Officers, Reps, and Faculty can broadcast."}), 403
         is_announcement = True
@@ -1433,7 +1581,7 @@ def create_community_post():
 def edit_community_post(post_id):
     post = CommunityPost.query.get(post_id)
     if not post: return jsonify({"error": "Post not found."}), 404
-    if post.author_id != current_user.id and current_user.role != 'MISD': return jsonify({"error": "Unauthorized to edit this post."}), 403
+    if post.author_id != current_user.id and not _is_dev(): return jsonify({"error": "Unauthorized to edit this post."}), 403
 
     data = json_body()
     new_content = scrub_pii(sfield(data, "content", max_len=5000))
@@ -1523,7 +1671,7 @@ POST_STATUSES = {"Open", "Under Review", "Action Taken"}
 @login_required
 @api_guard
 def update_post_status():
-    if not any(k in (current_user.role or "").lower() for k in ['officer', 'faculty', 'misd']): return jsonify({"error": "Unauthorized."}), 403
+    if not any(k in (current_user.role or "").lower() for k in ['officer', 'faculty', 'developer', 'misd']): return jsonify({"error": "Unauthorized."}), 403
 
     data = json_body()
     post = CommunityPost.query.get(ifield(data, "post_id"))
@@ -1581,7 +1729,7 @@ def get_forms_api():
 @login_required
 @api_guard
 def create_form_api():
-    if not any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'faculty', 'misd']): return jsonify({"error": "Unauthorized."}), 403
+    if not any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'faculty', 'developer', 'misd']): return jsonify({"error": "Unauthorized."}), 403
 
     data = json_body()
     title = sfield(data, "title", max_len=250)
@@ -1719,7 +1867,7 @@ def _manageable_form(form_id):
     """Creator (or MISD) only. Removed surveys behave as if they no longer exist."""
     form = db.session.get(EvaluationForm, form_id)
     if not form or not form.is_active: return None, (jsonify({"error": "That survey no longer exists."}), 404)
-    if form.created_by_id != current_user.id and current_user.role != 'MISD':
+    if form.created_by_id != current_user.id and not _is_dev():
         return None, (jsonify({"error": "Only the person who created this survey can do that."}), 403)
     return form, None
 
@@ -1961,8 +2109,22 @@ def export_form_csv(form_id):
 try: MIN_ANON_GROUP = max(1, int(os.getenv("MIN_ANON_GROUP", "5")))
 except ValueError: MIN_ANON_GROUP = 5
 
-def _is_student(): return str(getattr(current_user, "role", "") or "").startswith("Student")
-def _privacy_exempt(): return getattr(current_user, "role", "") == "MISD"
+def _is_dev(u=None):
+    u = u or current_user
+    return str(getattr(u, "role", "") or "").strip().upper() in ("DEVELOPER", "MISD", "ADMIN")
+
+def _is_evaluator(u=None):
+    u = u or current_user
+    r = str(getattr(u, "role", "") or "").strip().lower()
+    return _is_dev(u) or ("faculty" in r) or ("officer" in r) or ("representative" in r)
+
+def _is_student():
+    r = str(getattr(current_user, "role", "") or "").strip().lower()
+    if "officer" in r or "representative" in r or "faculty" in r or _is_dev():
+        return False
+    return r.startswith("student")
+
+def _privacy_exempt(): return _is_dev()
 
 _EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
 _PH_MOBILE_RE = re.compile(r'(?<!\d)(?:\+?63|0)\s?9\d{2}[\s.-]?\d{3}[\s.-]?\d{4}(?!\d)')
@@ -2183,7 +2345,7 @@ def handle_academic_years():
     if request.method == 'GET':
         return jsonify([y.year for y in AcademicYear.query.order_by(AcademicYear.year.desc()).all()])
 
-    if current_user.role != "MISD": return jsonify({"error": "Unauthorized."}), 403
+    if not _is_dev(): return jsonify({"error": "Unauthorized."}), 403
 
     year_val = sfield(json_body(), 'year', max_len=20)
     if not year_val or not re.match(r'^\d{4}-\d{4}$', year_val): return jsonify({"error": "Format must be YYYY-YYYY."}), 400
@@ -2201,8 +2363,8 @@ def handle_active_term():
         yr, sem = get_active_term()
         return jsonify({"academic_year": yr, "semester": sem})
 
-    if current_user.role != "MISD":
-        return jsonify({"error": "Only MISD administrators can change the active institutional term."}), 403
+    if not _is_dev():
+        return jsonify({"error": "Only Developer administrators can change the active institutional term."}), 403
 
     data = json_body()
     year_val = sfield(data, 'academic_year', max_len=20)
@@ -2222,19 +2384,157 @@ def handle_active_term():
 # ==========================================
 # DASHBOARD & ANALYTICS API
 # ==========================================
+def _build_why_explanation(entry, parsed_aspects, has_sarcasm):
+    sent = str(entry.sentiment or "Neutral").capitalize()
+    pos_words, neg_words, amp_words, inv_words = [], [], [], []
+    primary_aspect = "General Academic Feedback"
+    if parsed_aspects:
+        primary_aspect = parsed_aspects[0].get("aspect") or primary_aspect
+    for item in (parsed_aspects or []):
+        for tok in item.get("token_scores", []):
+            w = str(tok.get("word") or "")
+            sc = float(tok.get("final_score") or 0)
+            role = str(tok.get("role") or "")
+            if sc > 0 and w not in pos_words:
+                pos_words.append(f"'{w}' (+{sc:g})")
+            elif sc < 0 and w not in neg_words:
+                neg_words.append(f"'{w}' ({sc:g})")
+            elif "Intensifier" in role and w not in amp_words:
+                amp_words.append(f"'{w}'")
+            elif ("Negator" in role or "Sarcasm" in role) and w not in inv_words:
+                inv_words.append(f"'{w}'")
+
+    if has_sarcasm:
+        inv_str = ", ".join(inv_words) if inv_words else "'eme/charot'"
+        return f"Why Negative: Sarcasm/irony marker ({inv_str}) inverted surface praise into Negative under {primary_aspect}."
+    if sent == "Positive":
+        if pos_words:
+            amp_note = f" amplified by {', '.join(amp_words[:2])}" if amp_words else ""
+            return f"Why Positive: Driven by positive keywords ({', '.join(pos_words[:4])}){amp_note} under {primary_aspect}."
+        return f"Why Positive: XLM-RoBERTa contextual inference ({round((entry.confidence or 0.75)*100)}% confidence) detected favorable tone in {primary_aspect}."
+    if sent == "Negative":
+        if neg_words:
+            inv_note = f" with negation ({', '.join(inv_words[:2])})" if inv_words else ""
+            return f"Why Negative: Flagged by critical keywords ({', '.join(neg_words[:4])}){inv_note} under {primary_aspect}."
+        return f"Why Negative: XLM-RoBERTa contextual inference ({round((entry.confidence or 0.75)*100)}% confidence) detected critical concern in {primary_aspect}."
+    return f"Why Neutral: Descriptive or factual statement without strong polarity triggers ({round((entry.confidence or 0.75)*100)}% confidence) in {primary_aspect}."
+
+def _compute_total_summary(all_matching, aspect_counts):
+    """Builds the comprehensive Total Summary across all responses (both current filter scope and grand institutional totals)."""
+    all_db = Feedback.query.filter_by(department="DCI").all()
+    grand_total = len(all_db)
+    grand_pos = sum(1 for r in all_db if str(r.sentiment).strip().lower() == "positive")
+    grand_neg = sum(1 for r in all_db if str(r.sentiment).strip().lower() == "negative")
+    grand_neu = sum(1 for r in all_db if str(r.sentiment).strip().lower() == "neutral")
+
+    by_source = {}
+    by_program = {}
+    by_term = {}
+    by_aspect_full = {
+        "Instructional Delivery & Pedagogy": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
+        "Faculty Demeanor & Approachability": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
+        "Campus Facilities & Infrastructure": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
+    }
+
+    dataset_for_breakdown = all_matching if all_matching else all_db
+    for r in all_db:
+        src_k = r.source or "Portal"
+        if src_k not in by_source:
+            by_source[src_k] = {"total": 0, "pos": 0, "neg": 0, "neu": 0}
+        by_source[src_k]["total"] += 1
+        s_low = str(r.sentiment).strip().lower()
+        if s_low == "positive": by_source[src_k]["pos"] += 1
+        elif s_low == "negative": by_source[src_k]["neg"] += 1
+        else: by_source[src_k]["neu"] += 1
+
+    for r in dataset_for_breakdown:
+        s_low = str(r.sentiment).strip().lower()
+        pol_key = "pos" if s_low == "positive" else "neg" if s_low == "negative" else "neu"
+
+        prog_k = (r.program or "General").strip() or "General"
+        if "BSCS" in prog_k.upper(): prog_k = "BSCS"
+        elif "BSIT" in prog_k.upper(): prog_k = "BSIT"
+        if prog_k not in by_program:
+            by_program[prog_k] = {"program": prog_k, "total": 0, "pos": 0, "neg": 0, "neu": 0}
+        by_program[prog_k]["total"] += 1
+        by_program[prog_k][pol_key] += 1
+
+        term_k = f"{r.academic_year or '2026-2027'} • {r.semester or '1st Semester'}"
+        if term_k not in by_term:
+            by_term[term_k] = {"term": term_k, "total": 0, "pos": 0, "neg": 0, "neu": 0}
+        by_term[term_k]["total"] += 1
+        by_term[term_k][pol_key] += 1
+
+        try:
+            for item in json.loads(r.aspect_breakdown):
+                asp = item.get("aspect", "")
+                pol = str(item.get("polarity", "")).strip().lower()
+                pk = "pos" if pol == "positive" else "neg" if pol == "negative" else "neu"
+                target_asp = None
+                if "Instructional" in asp or "Pedagogy" in asp:
+                    target_asp = "Instructional Delivery & Pedagogy"
+                elif "Demeanor" in asp or "Approachability" in asp:
+                    target_asp = "Faculty Demeanor & Approachability"
+                elif "Facilities" in asp:
+                    target_asp = "Campus Facilities & Infrastructure"
+                if target_asp:
+                    by_aspect_full[target_asp]["total"] += 1
+                    by_aspect_full[target_asp][pk] += 1
+        except Exception:
+            pass
+
+    f_total = len(dataset_for_breakdown)
+    f_pos = sum(1 for r in dataset_for_breakdown if str(r.sentiment).strip().lower() == "positive")
+    f_neg = sum(1 for r in dataset_for_breakdown if str(r.sentiment).strip().lower() == "negative")
+    f_neu = sum(1 for r in dataset_for_breakdown if str(r.sentiment).strip().lower() == "neutral")
+    pos_pct = round((f_pos / f_total) * 100, 1) if f_total else 0.0
+    neg_pct = round((f_neg / f_total) * 100, 1) if f_total else 0.0
+    neu_pct = round((f_neu / f_total) * 100, 1) if f_total else 0.0
+    actionable_total = f_pos + f_neg
+    binary_pos_pct = round((f_pos / actionable_total) * 100, 1) if actionable_total else 0.0
+    binary_neg_pct = round((f_neg / actionable_total) * 100, 1) if actionable_total else 0.0
+
+    top_neg_aspect = max(by_aspect_full.items(), key=lambda kv: kv[1]["neg"])[0] if f_total else "None"
+    top_pos_aspect = max(by_aspect_full.items(), key=lambda kv: kv[1]["pos"])[0] if f_total else "None"
+
+    if f_total == 0:
+        narrative = "No evaluated responses in the current view yet. Upload a CSV dataset or switch data source tabs to view the quantitative synthesis."
+    else:
+        verdict = "predominantly positive" if f_pos > f_neg else ("predominantly critical/negative" if f_neg > f_pos else "balanced")
+        narrative = (
+            f"Across {f_total} evaluated student responses ({grand_total} total across all system sources), overall sentiment is {verdict}: "
+            f"{f_pos} Positive ({pos_pct}%), {f_neg} Negative ({neg_pct}%), and {f_neu} Neutral ({neu_pct}%). "
+            f"When Neutral remarks are excluded for binary decision-making, {binary_pos_pct}% are Positive vs. {binary_neg_pct}% Negative. "
+            f"Strongest commendations center on {top_pos_aspect}, while actionable grievances are most concentrated in {top_neg_aspect}."
+        )
+
+    return {
+        "grand_total": grand_total, "grand_pos": grand_pos, "grand_neg": grand_neg, "grand_neu": grand_neu,
+        "scope_total": f_total, "scope_pos": f_pos, "scope_neg": f_neg, "scope_neu": f_neu,
+        "pos_pct": pos_pct, "neg_pct": neg_pct, "neu_pct": neu_pct,
+        "binary_pos_pct": binary_pos_pct, "binary_neg_pct": binary_neg_pct,
+        "top_pos_aspect": top_pos_aspect, "top_neg_aspect": top_neg_aspect,
+        "narrative": narrative,
+        "by_source": by_source,
+        "by_program": list(by_program.values()),
+        "by_aspect": [{"aspect": k, **v} for k, v in by_aspect_full.items()],
+        "by_term": list(by_term.values())
+    }
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    if current_user.role.startswith("Student"): return redirect(url_for('student_portal'))
-    return render_template('dashboard.html', username=current_user.username, role=current_user.role, user_dept=current_user.department, user_program=current_user.program, tour_seen=bool(current_user.tour_seen))
+    if _is_student(): return redirect(url_for('student_portal'))
+    display_role = "Developer" if _is_dev() else current_user.role
+    return render_template('dashboard.html', username=current_user.username, role=display_role, user_dept=current_user.department, user_program=current_user.program, tour_seen=bool(current_user.tour_seen))
 
 @app.route('/api/analytics', methods=['GET'])
 @login_required
 @api_guard
 def get_analytics():
-    if _is_student(): return jsonify({"error": "Unauthorized."}), 403     # this endpoint used to answer any signed-in student
+    if _is_student(): return jsonify({"error": "Unauthorized."}), 403
     selected_program = request.args.get('program', 'ALL').strip().upper()
-    selected_sentiment = request.args.get('sentiment', 'ALL').strip().capitalize()
+    selected_sentiment = request.args.get('sentiment', 'ALL').strip()
     
     selected_year = request.args.get('year', 'ALL').strip()
     selected_sem = request.args.get('semester', 'ALL').strip()
@@ -2243,11 +2543,15 @@ def get_analytics():
     page = request.args.get('page', 1, type=int)
     per_page = min(max(request.args.get('per_page', 10, type=int), 1), 100)
     source_filter = request.args.get('source', 'Portal').strip()
+    exclude_neutral = request.args.get('binary', '0').strip() == '1'
 
     query = Feedback.query.filter_by(department="DCI")
     
     if selected_program != 'ALL': query = query.filter(Feedback.program.ilike(f"%{selected_program}%"))
-    if selected_sentiment != 'All': query = query.filter(func.lower(Feedback.sentiment) == selected_sentiment.lower())
+    if exclude_neutral:
+        query = query.filter(func.lower(Feedback.sentiment).in_(['positive', 'negative']))
+    elif selected_sentiment.upper() != 'ALL':
+        query = query.filter(func.lower(Feedback.sentiment) == selected_sentiment.lower())
     if selected_year != 'ALL': query = query.filter_by(academic_year=selected_year)
     if selected_sem != 'ALL': query = query.filter_by(semester=selected_sem)
     if source_filter != 'ALL': query = query.filter_by(source=source_filter)
@@ -2307,6 +2611,7 @@ def get_analytics():
             "verified_at": entry.verified_at.strftime("%Y-%m-%d %H:%M") if entry.verified_at else None,
             "confidence": entry.confidence, "aspects": parsed,
             "has_sarcasm": has_sarcasm,
+            "why_reason": _build_why_explanation(entry, parsed, has_sarcasm),
             "timestamp": entry.timestamp.strftime("%Y-%m-%d %H:%M") if entry.timestamp else ""
         })
 
@@ -2316,6 +2621,7 @@ def get_analytics():
         "active_term": {"academic_year": active_yr, "semester": active_sem},
         "available_years": [y.year for y in AcademicYear.query.order_by(AcademicYear.year.desc()).all()],
         "kpis": {"total": total_items, "pos": pos, "neg": neg, "neu": neu},
+        "summary_overview": _compute_total_summary(all_matching, aspect_counts),
         "pie_chart": generate_matplotlib_pie(pos, neg, neu, theme),
         "aspect_chart": generate_matplotlib_bar(aspect_counts, theme),
         "insights": compute_prescriptive_insights(all_matching),
@@ -2380,7 +2686,7 @@ def inspect_preview():
 @login_required
 @api_guard
 def analyze_api():
-    if current_user.role != "MISD": return jsonify({"error": "Unauthorized."}), 403
+    if not _is_dev(): return jsonify({"error": "Unauthorized."}), 403
     data = json_body()
     comment = sfield(data, "comment", max_len=5000)
     if not comment: return jsonify({"error": "No comment provided."}), 400
@@ -2510,8 +2816,8 @@ def compute_classification_metrics(items):
 @login_required
 @api_guard
 def override_feedback_sentiment(feedback_id):
-    if current_user.role != "MISD":
-        return jsonify({"error": "Only MISD administrators can verify or override sentiment classifications."}), 403
+    if not _is_dev():
+        return jsonify({"error": "Only Developer administrators can verify or override sentiment classifications."}), 403
 
     entry = db.session.get(Feedback, feedback_id)
     if not entry:
@@ -2557,7 +2863,7 @@ def override_feedback_sentiment(feedback_id):
 @login_required
 @api_guard
 def get_model_evaluation():
-    if current_user.role != "MISD":
+    if not _is_dev():
         return jsonify({"error": "Unauthorized."}), 403
 
     mode = request.args.get("mode", "verified").strip().lower()
@@ -2592,7 +2898,7 @@ def get_model_evaluation():
             "actual": r.human_sentiment,
             "predicted": r.ai_sentiment or r.sentiment,
             "confidence": r.confidence,
-            "verified_by": r.verified_by or "MISD"
+            "verified_by": r.verified_by or "Developer"
         })
     metrics = compute_classification_metrics(items)
     metrics["mode"] = "verified"
@@ -2604,7 +2910,7 @@ def get_model_evaluation():
 @login_required
 @api_guard
 def seed_benchmark_into_db():
-    if current_user.role != "MISD":
+    if not _is_dev():
         return jsonify({"error": "Unauthorized."}), 403
 
     active_yr, active_sem = get_active_term()
@@ -2683,12 +2989,25 @@ def _split_existing_duplicates(valid, exclude_batch=None):
     for v in valid: (dupes if _import_key(v) in have else fresh).append(v)
     return fresh, dupes
 
+@app.route('/api/import/template', methods=['GET'])
+@login_required
+@api_guard
+def import_csv_template():
+    if _is_student(): return jsonify({"error": "Unauthorized."}), 403
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["Program", "Academic_Year", "Semester", "Feedback"])
+    w.writerow(["BSCS", "2026-2027", "1st Semester", "Sobrang husay at napakalinaw magpaliwanag ng instructor namin sa Data Structures."])
+    w.writerow(["BSIT", "2026-2027", "1st Semester", "Mabilis ang mga bagong computer units at malamig ang aircon sa networking laboratory."])
+    w.writerow(["BSCS", "2026-2027", "1st Semester", "Ang galing magturo ni sir sobrang linaw eme, wala talaga kaming naintindihan buong klase."])
+    return Response(out.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=leximetrix_feedback_template.csv"})
+
 @app.route('/api/import/preview', methods=['POST'])
 @limiter.limit("40 per hour")
 @login_required
 @api_guard
 def import_preview():
-    if current_user.role != "MISD": return jsonify({"error": "Unauthorized."}), 403
+    if not _is_evaluator(): return jsonify({"error": "Unauthorized."}), 403
     raw, name = _read_import_upload()
     parsed = parse_import_csv(raw, _import_mapping(), _import_defaults())
     fresh, dupes = _split_existing_duplicates(parsed["valid"])
@@ -2709,9 +3028,8 @@ def import_preview():
 @login_required
 @api_guard
 def import_commit():
-    """Scores and stores one small chunk, then reports where it stopped. The page keeps calling it until done, so a big file never times out
-    and a dropped connection can simply resume (the server counts what the batch already holds)."""
-    if current_user.role != "MISD": return jsonify({"error": "Unauthorized."}), 403
+    """Scores and stores one small chunk, then reports where it stopped."""
+    if not _is_evaluator(): return jsonify({"error": "Unauthorized."}), 403
     raw, name = _read_import_upload()
     sha = hashlib.sha256(raw).hexdigest()
     if request.form.get("file_sha256") and request.form.get("file_sha256") != sha:
@@ -2752,7 +3070,7 @@ def import_commit():
 @login_required
 @api_guard
 def import_history():
-    if current_user.role != "MISD": return jsonify({"error": "Unauthorized."}), 403
+    if not _is_evaluator(): return jsonify({"error": "Unauthorized."}), 403
     rows = ImportBatch.query.order_by(ImportBatch.created_at.desc()).limit(15).all()
     return jsonify([{"id": b.id, "filename": b.filename, "uploaded_by": b.uploaded_by, "imported": b.imported or 0, "importable": b.importable or 0,
                      "skipped": b.skipped or 0, "duplicates": b.duplicates or 0, "status": b.status,
@@ -2764,7 +3082,7 @@ def import_history():
 @login_required
 @api_guard
 def import_rollback(batch_id):
-    if current_user.role != "MISD": return jsonify({"error": "Unauthorized."}), 403
+    if not _is_evaluator(): return jsonify({"error": "Unauthorized."}), 403
     batch = db.session.get(ImportBatch, batch_id)
     if not batch: return jsonify({"error": "Import not found."}), 404
     if batch.status == "rolled_back": return jsonify({"error": "This import was already undone."}), 409
@@ -2811,7 +3129,7 @@ def manage_lexicon():
         if _is_student(): return jsonify({"error": "Unauthorized."}), 403
         return jsonify([{"id": t.id, "word": t.word, "category": t.category} for t in LexiconTerm.query.order_by(LexiconTerm.id.desc()).all()])
 
-    if current_user.role != "MISD": return jsonify({"error": "Unauthorized."}), 403
+    if not _is_dev(): return jsonify({"error": "Unauthorized."}), 403
 
     if request.method == 'POST':
         data = json_body()
