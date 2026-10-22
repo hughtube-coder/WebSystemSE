@@ -602,6 +602,25 @@ def seed_database():
             new_dev.set_password(dev_pwd)
             db.session.add(new_dev)
 
+    # Fixed Developer team accounts. Only password HASHES are stored here (scrypt), never the plain passwords.
+    # Existing accounts are promoted to Developer and verified, but their password is never overwritten,
+    # so a developer who changes their own password keeps it after a redeploy.
+    DEVELOPER_TEAM = [
+        ("apmalacaman", "apmalacaman@ccc.edu.ph", "scrypt:32768:8:1$u4MGa1zoAPA90frp$9a7635f4473c04e39b91ba59eade8491958fee2d52ac506df2d9b4699eec2e125974fddbc21cf6576c89d7fa13dc1b0275efe10a3340a9d5c58e7367e928d6b6"),
+        ("msmorata", "msmorata@ccc.edu.ph", "scrypt:32768:8:1$bah1q5yLS4Sbw4Om$90d974f32238461a51ccd5ec59a9d8330c005a1adc375c78fcf193575627f7d2e4ed7bb2993de390fee7e7385487712e3d0916d8bda0ec21dc0c08d774b38bb3"),
+        ("hjraymundo", "hjraymundo@ccc.edu.ph", "scrypt:32768:8:1$3Q7PgAHJdBfLtU1e$b50d8a04dcfedae7ab352a8577d5cf62a9b80619e465feb4957a55d4af2e8c3726e8272ca6c93623df6bd15ae8f6082ddf9dfca39e34107784a5d209d27552b3"),
+    ]
+    for _dev_username, _dev_email, _dev_hash in DEVELOPER_TEAM:
+        _member = User.query.filter((User.email == _dev_email) | (User.username == _dev_username)).first()
+        if _member:
+            _member.role = "Developer"
+            _member.is_verified = True
+            if not _member.privacy_consent_at:
+                _member.privacy_consent_at = datetime.utcnow()
+        else:
+            db.session.add(User(username=_dev_username, email=_dev_email, password_hash=_dev_hash, role="Developer",
+                                department="DCI", program="ALL", is_verified=True, privacy_consent_at=datetime.utcnow()))
+
     db.session.commit()
 
 def setup_database():
