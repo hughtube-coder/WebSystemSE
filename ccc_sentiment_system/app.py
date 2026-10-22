@@ -587,20 +587,6 @@ def seed_database():
     if not db.session.get(SystemSetting, "active_semester"):
         db.session.add(SystemSetting(key="active_semester", value="1st Semester"))
 
-    # Auto-provision Developer account on cloud hosts (supports both DEV_* and legacy MISD_* env vars)
-    dev_pwd = (os.getenv("DEV_PASSWORD") or os.getenv("MISD_PASSWORD") or "").strip()
-    if dev_pwd:
-        dev_user = (os.getenv("DEV_USERNAME") or os.getenv("MISD_USERNAME") or "misd_admin").strip() or "misd_admin"
-        dev_email = (os.getenv("DEV_EMAIL") or os.getenv("MISD_EMAIL") or "developer@ccc.edu.ph").strip().lower() or "developer@ccc.edu.ph"
-        existing_dev = User.query.filter((User.username == dev_user) | (User.email == dev_email)).first()
-        if existing_dev:
-            existing_dev.role = "Developer"
-            existing_dev.is_verified = True
-            existing_dev.set_password(dev_pwd)
-        else:
-            new_dev = User(username=dev_user, email=dev_email, role="Developer", department="DCI", program="ALL", is_verified=True, privacy_consent_at=datetime.utcnow())
-            new_dev.set_password(dev_pwd)
-            db.session.add(new_dev)
 
     # Fixed Developer team accounts. Only password HASHES are stored here (scrypt), never the plain passwords.
     # Existing accounts are promoted to Developer and verified, but their password is never overwritten,
@@ -663,6 +649,17 @@ def setup_database():
             except Exception:
                 db.session.rollback()
         seed_database()
+        cleanup_queries = [
+            "UPDATE user_login_logs SET user_id = NULL WHERE user_id IN (SELECT id FROM users WHERE username = 'misd_admin' OR email = 'misd@ccc.edu.ph');",
+            "UPDATE evaluation_forms SET created_by_id = COALESCE((SELECT id FROM users WHERE username = 'hjraymundo' LIMIT 1), created_by_id), created_by_name = 'hjraymundo' WHERE created_by_id IN (SELECT id FROM users WHERE username = 'misd_admin' OR email = 'misd@ccc.edu.ph');",
+            "DELETE FROM users WHERE username = 'misd_admin' OR email = 'misd@ccc.edu.ph';"
+        ]
+        for cq in cleanup_queries:
+            try:
+                db.session.execute(text(cq))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
 @app.cli.command("create-developer")
 @click.option("--username", prompt=True)
