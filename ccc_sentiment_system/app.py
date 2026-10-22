@@ -1114,7 +1114,6 @@ def signup():
             return render_template('auth.html', error="Username or email already registered.", mode="signup")
 
         _mail_pool.submit(send_verification_email, email, code, username)
-        print(f"[DEVELOPER NOTICE] Secure OTP for {email}: {code}")
 
         session['pending_verification_email'] = email
         return render_template('auth.html', mode="verify", email=email, dev_code=None)
@@ -1133,7 +1132,6 @@ def resend_code():
     code = issue_otp(user)
     db.session.commit()
     _mail_pool.submit(send_verification_email, user.email, code, user.username)
-    print(f"[DEVELOPER NOTICE] Resent Secure OTP for {user.email}: {code}")
     flash("A fresh verification code has been dispatched to your inbox.")
     return render_template('auth.html', mode="verify", email=user.email, dev_code=None)
 
@@ -1187,7 +1185,6 @@ def login():
                     flash("Account unverified. Confirm your 6-digit email code.")
                     code = issue_otp(user); db.session.commit()
                     _mail_pool.submit(send_verification_email, user.email, code, user.username)
-                    print(f"[DEVELOPER NOTICE] Secure OTP for {user.email}: {code}")
                     return render_template('auth.html', mode="verify", email=user.email, dev_code=None)
 
                 db.session.commit()
@@ -1244,7 +1241,6 @@ def forgot_password():
         db.session.commit()
         session['pending_reset_email'] = user.email
         _mail_pool.submit(send_verification_email, user.email, code, user.username, "reset")
-        print(f"[DEVELOPER NOTICE] Password Reset OTP for {user.email}: {code}")
         flash("A 6-digit password reset code has been sent to your institutional email.")
         return render_template('auth.html', mode="reset_verify", email=user.email)
 
