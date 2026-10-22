@@ -152,13 +152,26 @@ def send_verification_email(recipient_email, code, username, purpose="verify"):
         </body>
         </html>
         """
-        msg.add_alternative(html_content, subtype='html')
-
-        if not MAIL_PASSWORD: return
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
-            server.starttls()
-            server.login(MAIL_SENDER, MAIL_PASSWORD)
-            server.send_message(msg)
+        # Brevo HTTPS API (Render blocks outbound SMTP ports on free web services)
+        api_key = os.getenv("BREVO_API_KEY", "").strip()
+        if not api_key:
+            print("[-] BREVO_API_KEY not set; email not sent")
+            return
+        import json, urllib.request
+        payload = json.dumps({
+            "sender": {"name": "LexiMetrix Evaluation Engine", "email": MAIL_SENDER},
+            "to": [{"email": recipient_email}],
+            "subject": msg['Subject'],
+            "htmlContent": html_content,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.brevo.com/v3/smtp/email",
+            data=payload,
+            headers={"api-key": api_key, "content-type": "application/json", "accept": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            print(f"[+] Email sent to {recipient_email} ({resp.status})")
     except Exception as e:
         print(f"[-] SMTP Delivery Notice: {e}")
 
@@ -3351,4 +3364,4 @@ if os.getenv("SKIP_DB_INIT") != "1":
         app.logger.warning("Startup DB init notice: %s", _db_init_err)
 
 if __name__ == '__main__':
-    app.run(debug=False, port=int(os.getenv("PORT", "5000"))) 
+    app.run(debug=False, port=int(os.getenv("PORT", "5000")))
