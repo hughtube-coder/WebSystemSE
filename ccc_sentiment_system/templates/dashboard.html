@@ -933,7 +933,14 @@
             </div>
             {% endif %}
 
-            <div style="text-align: right;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                {% if role in ['Developer', 'MISD', 'Admin'] %}
+                <button type="button" id="btnDeleteFeedbackRecord" class="btn-nav" onclick="deleteCurrentFeedbackRecord(this)" style="color: #fb7185; border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.1); font-weight: 700;">
+                    🗑️ Delete Inappropriate Record
+                </button>
+                {% else %}
+                <span></span>
+                {% endif %}
                 <button class="btn-action" onclick="closeAlgorithmModal()">Acknowledge & Close</button>
             </div>
         </div>
@@ -987,8 +994,8 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </form>
 
-    <!-- Batch CSV Ingestion Modal (Available to Developers, Faculty & Officers) -->
-    {% if True %}
+    <!-- Batch CSV Ingestion & Slang Manager Modals (Developer Only) -->
+    {% if role in ['Developer', 'MISD', 'Admin'] %}
     <div id="csvModal" class="modal-overlay">
         <div class="modal-card" style="width: min(94%, 740px); max-height: 92vh; overflow-y: auto;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
@@ -1336,6 +1343,7 @@
                 </div>
             </details>
 
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
             <!-- Optional Collapsible Single-Sentence Diagnostic Tester (For Developer Verification) -->
             <details style="background:rgba(255,255,255,0.02); border:1px dashed var(--border-light); border-radius:12px; padding:12px 16px; margin-bottom:14px;">
                 <summary style="cursor:pointer; font-size:0.8rem; font-weight:700; color:#38bdf8;">
@@ -1363,6 +1371,7 @@
                     <button class="btn-action" onclick="submitSingleFeedback()">Run Single-Sentence Test</button>
                 </div>
             </details>
+            {% endif %}
 
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <button class="btn-nav" onclick="exportCurrentCsv()" style="border-color:rgba(14,165,233,0.4); color:#38bdf8;">📤 Export Filtered Dataset (CSV)</button>
@@ -1386,7 +1395,9 @@
         <div class="nav-actions" id="navActionsTarget">
             <a href="{{ url_for('student_portal') }}" id="studentPortalNavBtn" onclick="window._loggingOut=true;" class="btn-nav" title="Switch to the Student Feedback & Survey Portal" style="text-decoration:none; border-color:rgba(99,102,241,0.4); color:#a5b4fc;">🏛️ Student Portal</a>
             <button type="button" class="btn-nav btn-tour" onclick="CCCTour.start()" title="Take a guided tour of this dashboard" style="border-color:rgba(245,158,11,0.4); color:var(--txt-gold);">❓ Tour</button>
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
             <button class="btn-nav" onclick="openCsvModal()" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📥 Upload CSV &amp; Template</button>
+            {% endif %}
             <button class="btn-nav" onclick="exportCurrentCsv()">Export CSV</button>
             {% if role in ['Developer', 'MISD', 'Admin'] %}
             <button class="btn-nav" onclick="openLexiconModal()">Slang Manager</button>
@@ -1423,8 +1434,10 @@
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => document.getElementById('keywordCloudTarget').scrollIntoView({behavior:'smooth'}))">🔤 Recurring Lexicon Cloud</button>
 
             <div class="lx-side-section">Data &amp; Batch Tools</div>
+            {% if role in ['Developer', 'MISD', 'Admin'] %}
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => openCsvModal())">📥 Upload CSV &amp; Template</button>
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => downloadCsvTemplate())">📋 Download CSV Template</button>
+            {% endif %}
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => exportCurrentCsv())">📤 Export Filtered CSV</button>
 
             {% if role in ['Developer', 'MISD', 'Admin'] %}
@@ -3055,6 +3068,34 @@
             }
         }
 
+        async function deleteCurrentFeedbackRecord(btn) {
+            if (!isDev || !currentInspectedLogId) return;
+            if (btn.dataset.armed !== '1') {
+                btn.dataset.armed = '1';
+                const origText = btn.innerHTML;
+                btn.innerHTML = '⚠️ Click Again to Confirm Permanent Delete';
+                setTimeout(() => { btn.dataset.armed = ''; btn.innerHTML = origText; }, 4000);
+                return;
+            }
+            btn.dataset.armed = '';
+            showLoader("Deleting feedback record...");
+            try {
+                const res = await apiFetch(`/api/feedback/${currentInspectedLogId}/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                    body: JSON.stringify({})
+                });
+                const data = await readJson(res, "Could not delete feedback record.");
+                closeAlgorithmModal();
+                showToast("Feedback record permanently deleted.", "success");
+                fetchAnalytics();
+            } catch (e) {
+                showToast(e.userMessage || "Could not delete record.", "error");
+            } finally {
+                hideLoader();
+            }
+        }
+
         function closeAlgorithmModal() {
             closeModal('algorithmModal');
         }
@@ -3440,7 +3481,7 @@
             { target: "#keywordCloudTarget", title: "7. Recurring Lexicon Cloud", body: "Highlights the most frequent words in student comments. <strong>Click any word chip</strong> to filter the feedback logs below." },
             { target: "#logsPanelTarget", title: "8. Explainable Logs ('Why Positive / Why Negative')", body: "Every feedback row automatically highlights <strong>positive words in green</strong>, <strong>negative words in red</strong>, and <strong>sarcasm flips ('eme/charot') in violet</strong>, with a <strong>💡 Why Positive / Why Negative</strong> reason banner underneath. Click any row for full word weights or to verify/override its label." },
             { target: "#evalNavBtn", title: "9. Confusion Matrix & F1-Score Validation", body: "Click <strong>📊 AI Evaluation (F1)</strong> to inspect the 3×3 Confusion Matrix, Macro Precision, Recall, and F1-Score, or seed the 30-item Taglish Gold Benchmark.", roles: DEV_ROLES },
-            { target: "#navActionsTarget", title: "10. CSV Batch Upload & Layout Template", body: "Click <strong>📥 Upload CSV & Template</strong> to download the ready-made 4-column CSV layout template (<code>Program, Academic_Year, Semester, Feedback</code>) or upload batch datasets with smart fallback defaults." },
+            { target: "#navActionsTarget", title: "10. CSV Batch Upload & Layout Template", body: "Click <strong>📥 Upload CSV & Template</strong> to download the ready-made 4-column CSV layout template (<code>Program, Academic_Year, Semester, Feedback</code>) or upload batch datasets with smart fallback defaults.", roles: DEV_ROLES },
             { target: "#studentPortalNavBtn", title: "Switch to the Student Portal", body: "Click <strong>🏛️ Student Portal</strong> to see the student side (Town Hall and Formal Surveys). To come back here, use <strong>📊 Analytics Dashboard</strong> in the portal's left menu." },
             { target: ".nav-userchip", title: "Your Account", body: "Shows who is signed in: your initial, username, and role. Long usernames are shortened, so hover to see the full name. Next to it are the ☀️ light/dark switch and <strong>Sign Out</strong>." },
             { title: "You're Ready to Present!", body: "You can replay this interactive guide anytime by clicking <strong>❓ Tour</strong> in the top bar or <strong>❓ Interactive Guide</strong> in the left sidebar." }
