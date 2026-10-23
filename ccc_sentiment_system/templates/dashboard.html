@@ -1283,6 +1283,37 @@
                 </div>
             </div>
 
+            <!-- Optional Collapsible Custom Summary Builder -->
+            <details id="customSummaryBox" ontoggle="if(this.open) csBuildOptions()" style="background:rgba(255,255,255,0.02); border:1px dashed var(--border-light); border-radius:12px; padding:12px 16px; margin-bottom:14px;">
+                <style>
+                    .cs-group { margin-bottom: 12px; }
+                    .cs-label { font-size: 0.72rem; font-weight: 800; color: var(--text-title); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+                    .cs-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+                    .cs-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border-light); font-size: 0.78rem; font-weight: 600; cursor: pointer; user-select: none; color: var(--text-muted); }
+                    .cs-chip input { accent-color: #0ea5e9; margin: 0; }
+                    .cs-chip:has(input:checked) { border-color: #38bdf8; color: #38bdf8; background: rgba(14,165,233,0.12); }
+                    .cs-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+                </style>
+                <summary style="cursor:pointer; font-size:0.8rem; font-weight:700; color:#38bdf8;">
+                    🎛️ Optional Custom Summary Builder: Pick Which Data to Summarize
+                </summary>
+                <div style="margin-top:12px;">
+                    <div class="cs-hint" style="margin-bottom:12px;">Tick the groups you want. Leave a group empty to include everything in it. Sandbox/benchmark test rows are left out unless you tick "Testing".</div>
+                    <div class="cs-group"><div class="cs-label">Program</div><div class="cs-chips" id="csProgramChips"></div></div>
+                    <div class="cs-group"><div class="cs-label">Academic Year</div><div class="cs-chips" id="csYearChips"></div></div>
+                    <div class="cs-group"><div class="cs-label">Semester</div><div class="cs-chips" id="csSemChips"></div></div>
+                    <div class="cs-group"><div class="cs-label">Sentiment</div><div class="cs-chips" id="csSentChips"></div></div>
+                    <div class="cs-group"><div class="cs-label">Data Source</div><div class="cs-chips" id="csSourceChips"></div></div>
+                    <div class="cs-group"><div class="cs-label">Evaluation Aspect (only responses that mention it)</div><div class="cs-chips" id="csAspectChips"></div></div>
+                    <div class="cs-group"><div class="cs-label">Show in the result</div><div class="cs-chips" id="csShowChips"></div></div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn-action" id="csRunBtn" onclick="csRun()">📊 Generate Custom Summary</button>
+                        <button type="button" class="btn-nav" onclick="csReset()">↺ Reset</button>
+                    </div>
+                    <div id="csResult" style="margin-top:14px;"></div>
+                </div>
+            </details>
+
             <!-- Optional Collapsible Single-Sentence Diagnostic Tester (For Developer Verification) -->
             <details style="background:rgba(255,255,255,0.02); border:1px dashed var(--border-light); border-radius:12px; padding:12px 16px; margin-bottom:14px;">
                 <summary style="cursor:pointer; font-size:0.8rem; font-weight:700; color:#38bdf8;">
@@ -2290,6 +2321,100 @@
                 }
             }
             openModal('totalSummaryModal');
+        }
+
+        // ---------- Custom Summary Builder ----------
+        const CS_ASPECTS = ["Instructional Delivery & Pedagogy", "Faculty Demeanor & Approachability", "Campus Facilities & Infrastructure"];
+        const CS_SHOW = [["kpi", "Totals"], ["program", "By program"], ["term", "By term"], ["aspect", "By aspect"], ["source", "By source"]];
+
+        function csChips(id, name, items, checkedDefault) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const kept = new Set(Array.from(el.querySelectorAll('input:checked')).map(i => i.value));
+            const hadAny = el.children.length > 0;
+            el.innerHTML = items.map(([val, label]) => {
+                const on = hadAny ? kept.has(val) : !!checkedDefault;
+                return `<label class="cs-chip"><input type="checkbox" name="${name}" value="${esc(val)}" ${on ? 'checked' : ''}>${esc(label)}</label>`;
+            }).join('');
+        }
+        function csBuildOptions() {
+            csChips('csProgramChips', 'program', [['BSCS', 'BSCS'], ['BSIT', 'BSIT']], false);
+            const years = (typeof cachedYears !== 'undefined' && cachedYears) ? cachedYears : [];
+            csChips('csYearChips', 'year', years.map(y => [y, 'A.Y. ' + y]), false);
+            csChips('csSemChips', 'semester', [['1st Semester', '1st Semester'], ['2nd Semester', '2nd Semester']], false);
+            csChips('csSentChips', 'sentiment', [['Positive', 'Positive'], ['Negative', 'Negative'], ['Neutral', 'Neutral']], false);
+            csChips('csSourceChips', 'source', [['Portal', 'Portal'], ['CSV', 'CSV import'], ['Testing', 'Testing']], false);
+            csChips('csAspectChips', 'aspect', CS_ASPECTS.map(a => [a, a]), false);
+            csChips('csShowChips', 'show', CS_SHOW, true);
+        }
+        function csPicked(id) {
+            return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(i => i.value);
+        }
+        function csReset() {
+            document.querySelectorAll('#customSummaryBox input[type=checkbox]').forEach(i => { i.checked = (i.name === 'show'); });
+            const out = document.getElementById('csResult'); if (out) out.innerHTML = '';
+        }
+        function csTable(title, rows, key, label) {
+            if (!rows || !rows.length) return '';
+            const body = rows.map(r => {
+                const pp = r.total ? ((r.pos / r.total) * 100).toFixed(1) : '0.0';
+                const np = r.total ? ((r.neg / r.total) * 100).toFixed(1) : '0.0';
+                return `<tr>
+                    <td style="padding:9px;"><strong style="color:var(--text-title);">${esc(r[key])}</strong></td>
+                    <td style="padding:9px; font-weight:700;">${r.total}</td>
+                    <td style="padding:9px; color:#10b981; font-weight:700;">${r.pos} (${pp}%)</td>
+                    <td style="padding:9px; color:#f43f5e; font-weight:700;">${r.neg} (${np}%)</td>
+                    <td style="padding:9px; color:#fbbf24;">${r.neu}</td>
+                </tr>`;
+            }).join('');
+            return `<div style="background:rgba(7,13,29,0.5); border:1px solid var(--border-light); border-radius:14px; padding:12px; margin-bottom:12px;">
+                <div style="font-size:0.74rem; font-weight:800; color:var(--text-title); text-transform:uppercase; margin-bottom:8px;">${title}</div>
+                <div class="table-responsive"><table><thead><tr>
+                    <th style="padding:9px;">${label}</th><th style="padding:9px;">Total</th>
+                    <th style="padding:9px; color:#10b981;">Pos</th><th style="padding:9px; color:#f43f5e;">Neg</th><th style="padding:9px; color:#fbbf24;">Neu</th>
+                </tr></thead><tbody>${body}</tbody></table></div></div>`;
+        }
+        let csLastNarrative = '';
+        async function csRun() {
+            const out = document.getElementById('csResult');
+            const btn = document.getElementById('csRunBtn');
+            if (!out) return;
+            const params = new URLSearchParams();
+            [['csProgramChips', 'program'], ['csYearChips', 'year'], ['csSemChips', 'semester'], ['csSentChips', 'sentiment'], ['csSourceChips', 'source'], ['csAspectChips', 'aspect']]
+                .forEach(([id, name]) => csPicked(id).forEach(v => params.append(name, v)));
+            const show = new Set(csPicked('csShowChips'));
+            out.innerHTML = '<div class="cs-hint">Building summary...</div>';
+            if (btn) btn.disabled = true;
+            try {
+                const res = await apiFetch(`/api/analytics/custom_summary?${params.toString()}`);
+                const d = await res.json();
+                if (!res.ok || d.error) { out.innerHTML = `<div class="cs-hint" style="color:#fb7185;">${esc(d.error || 'Could not build the summary.')}</div>`; return; }
+                if (d.suppressed) { out.innerHTML = `<div class="cs-hint" style="color:#fbbf24;">${esc(d.privacy_note || 'Too few responses to show.')}</div>`; return; }
+                csLastNarrative = d.narrative || '';
+                let html = `<div style="background:rgba(14,165,233,0.09); border:1px solid rgba(56,189,248,0.35); border-left:4px solid #0ea5e9; border-radius:12px; padding:12px 14px; font-size:0.84rem; line-height:1.55; color:var(--text-title); margin-bottom:12px;">${esc(d.narrative)}</div>`;
+                if (d.total && show.has('kpi')) {
+                    html += `<div class="eval-kpi-grid" style="margin-bottom:12px;">
+                        <div class="eval-kpi-card" style="border-top-color:#0ea5e9;"><div class="eval-kpi-label">Selected Total</div><div class="eval-kpi-val" style="color:#38bdf8;">${d.total}</div><div class="eval-kpi-sub">Avg. confidence: ${(d.avg_confidence * 100).toFixed(1)}%</div></div>
+                        <div class="eval-kpi-card" style="border-top-color:#10b981;"><div class="eval-kpi-label">Positive</div><div class="eval-kpi-val" style="color:#10b981;">${d.pos} (${d.pos_pct}%)</div><div class="eval-kpi-sub">Binary: ${d.binary_pos_pct}%</div></div>
+                        <div class="eval-kpi-card" style="border-top-color:#f43f5e;"><div class="eval-kpi-label">Negative</div><div class="eval-kpi-val" style="color:#f43f5e;">${d.neg} (${d.neg_pct}%)</div><div class="eval-kpi-sub">Binary: ${d.binary_neg_pct}%</div></div>
+                        <div class="eval-kpi-card" style="border-top-color:#f59e0b;"><div class="eval-kpi-label">Neutral</div><div class="eval-kpi-val" style="color:#fbbf24;">${d.neu} (${d.neu_pct}%)</div><div class="eval-kpi-sub">Human-verified: ${d.verified_count}</div></div>
+                    </div>`;
+                }
+                if (d.total) {
+                    if (show.has('program')) html += csTable('📚 By Academic Program', d.by_program, 'program', 'Program');
+                    if (show.has('term')) html += csTable('📅 By Academic Term &amp; Semester', d.by_term, 'term', 'Term');
+                    if (show.has('aspect')) html += csTable('🎯 By Evaluation Aspect', d.by_aspect, 'aspect', 'Aspect');
+                    if (show.has('source')) html += csTable('🗂️ By Data Source', d.by_source, 'source', 'Source');
+                    html += `<button type="button" class="btn-nav" onclick="csCopy()" style="font-size:0.78rem;">📋 Copy summary text</button>`;
+                }
+                out.innerHTML = html;
+            } catch (e) {
+                out.innerHTML = `<div class="cs-hint" style="color:#fb7185;">${esc((e && e.userMessage) || 'Could not build the summary.')}</div>`;
+            } finally { if (btn) btn.disabled = false; }
+        }
+        function csCopy() {
+            if (!csLastNarrative) return;
+            try { navigator.clipboard.writeText(csLastNarrative); } catch (e) {}
         }
 
         function closeTotalSummaryModal() {
