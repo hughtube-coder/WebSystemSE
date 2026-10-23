@@ -2843,6 +2843,134 @@ def get_analytics():
         "pagination": {"page": page, "per_page": per_page, "total_items": total_items, "total_pages": total_pages}
     })
 
+CUSTOM_SUMMARY_ASPECTS = [
+    "Instructional Delivery & Pedagogy",
+    "Faculty Demeanor & Approachability",
+    "Campus Facilities & Infrastructure",
+]
+
+def _canon_aspect(name):
+    name = str(name or "")
+    if "Instructional" in name or "Pedagogy" in name: return CUSTOM_SUMMARY_ASPECTS[0]
+    if "Demeanor" in name or "Approachability" in name: return CUSTOM_SUMMARY_ASPECTS[1]
+    if "Facilities" in name: return CUSTOM_SUMMARY_ASPECTS[2]
+    return None
+
+@app.route('/api/analytics/custom_summary', methods=['GET'])
+@login_required
+@api_guard
+def get_custom_summary():
+    """Total summary for a hand-picked slice of the evaluated responses (program, term, sentiment, source, aspect)."""
+    if _is_student(): return jsonify({"error": "Unauthorized."}), 403
+    from sqlalchemy import or_
+
+    def _multi(name, limit=30):
+        vals = []
+        for raw in request.args.getlist(name):
+            for part in str(raw).split(','):
+                part = part.strip()[:80]
+                if part and part.upper() != 'ALL' and part not in vals:
+                    vals.append(part)
+        return vals[:limit]
+
+    programs = [p.upper() for p in _multi('program')]
+    years = _multi('year')
+    sems = _multi('semester')
+    sentiments = [x.lower() for x in _multi('sentiment') if x.lower() in ('positive', 'negative', 'neutral')]
+    sources = _multi('source')
+    aspects = [a for a in _multi('aspect') if a in CUSTOM_SUMMARY_ASPECTS]
+
+    query = Feedback.query.filter_by(department="DCI")
+    if programs: query = query.filter(or_(*[Feedback.program.ilike(f"%{p}%") for p in programs]))
+    if years: query = query.filter(Feedback.academic_year.in_(years))
+    if sems: query = query.filter(Feedback.semester.in_(sems))
+    if sentiments: query = query.filter(func.lower(Feedback.sentiment).in_(sentiments))
+    if sources: query = query.filter(Feedback.source.in_(sources))
+    else: query = query.filter(Feedback.source != "Testing")   # benchmark / sandbox rows stay out unless picked on purpose
+
+    rows = query.all()
+    parsed_cache = {}
+    if aspects:
+        kept = []
+        for r in rows:
+            try: items = json.loads(r.aspect_breakdown)
+            except Exception: items = []
+            parsed_cache[r.id] = items
+            if any(_canon_aspect(i.get("aspect")) in aspects for i in items): kept.append(r)
+        rows = kept
+
+    filters_echo = {"program": programs, "year": years, "semester": sems, "sentiment": sentiments, "source": sources, "aspect": aspects}
+    if not _privacy_exempt() and 0 < len(rows) < MIN_ANON_GROUP:
+        return jsonify({"suppressed": True, "total": 0, "filters": filters_echo,
+                        "privacy_note": f"Only {len(rows)} response(s) match this selection, so the details are hidden to protect the people who wrote them (minimum {MIN_ANON_GROUP})."})
+
+    def _bucket(r):
+        s_low = str(r.sentiment).strip().lower()
+        return "pos" if s_low == "positive" else "neg" if s_low == "negative" else "neu"
+
+    total = len(rows)
+    counts = {"pos": 0, "neg": 0, "neu": 0}
+    by_program, by_term, by_source = {}, {}, {}
+    by_aspect = {a: {"aspect": a, "total": 0, "pos": 0, "neg": 0, "neu": 0} for a in (aspects or CUSTOM_SUMMARY_ASPECTS)}
+    conf_sum, verified, profanity = 0.0, 0, 0
+
+    def _add(d, key, label_key, pk):
+        if key not in d: d[key] = {label_key: key, "total": 0, "pos": 0, "neg": 0, "neu": 0}
+        d[key]["total"] += 1; d[key][pk] += 1
+
+    for r in rows:
+        pk = _bucket(r)
+        counts[pk] += 1
+        conf_sum += float(r.confidence or 0)
+        if r.human_sentiment: verified += 1
+        if r.has_profanity: profanity += 1
+        prog = (r.program or "General").strip() or "General"
+        if "BSCS" in prog.upper(): prog = "BSCS"
+        elif "BSIT" in prog.upper(): prog = "BSIT"
+        _add(by_program, prog, "program", pk)
+        _add(by_term, f"{r.academic_year or '2026-2027'} \u2022 {r.semester or '1st Semester'}", "term", pk)
+        _add(by_source, r.source or "Portal", "source", pk)
+        items = parsed_cache.get(r.id)
+        if items is None:
+            try: items = json.loads(r.aspect_breakdown)
+            except Exception: items = []
+        for item in items:
+            canon = _canon_aspect(item.get("aspect"))
+            if canon in by_aspect:
+                pol = str(item.get("polarity", "")).strip().lower()
+                apk = "pos" if pol == "positive" else "neg" if pol == "negative" else "neu"
+                by_aspect[canon]["total"] += 1; by_aspect[canon][apk] += 1
+
+    pct = lambda n, d: round((n / d) * 100, 1) if d else 0.0
+    actionable = counts["pos"] + counts["neg"]
+    scope_bits = []
+    if programs: scope_bits.append("program " + "/".join(programs))
+    if years: scope_bits.append("A.Y. " + ", ".join(years))
+    if sems: scope_bits.append(", ".join(sems))
+    if sentiments: scope_bits.append("sentiment " + "/".join(x.capitalize() for x in sentiments))
+    if sources: scope_bits.append("source " + "/".join(sources))
+    if aspects: scope_bits.append("aspect " + "; ".join(aspects))
+    scope_text = "; ".join(scope_bits) if scope_bits else "all evaluated responses"
+    if total:
+        narrative = (f"Custom summary for {scope_text}: {total} response(s) - {counts['pos']} positive ({pct(counts['pos'], total)}%), "
+                     f"{counts['neg']} negative ({pct(counts['neg'], total)}%), {counts['neu']} neutral ({pct(counts['neu'], total)}%). "
+                     f"Among actionable (positive/negative) responses, {pct(counts['pos'], actionable)}% are positive.")
+    else:
+        narrative = f"No responses match this selection ({scope_text})."
+
+    return jsonify({
+        "suppressed": False, "filters": filters_echo, "scope_text": scope_text, "narrative": narrative,
+        "total": total, "pos": counts["pos"], "neg": counts["neg"], "neu": counts["neu"],
+        "pos_pct": pct(counts["pos"], total), "neg_pct": pct(counts["neg"], total), "neu_pct": pct(counts["neu"], total),
+        "binary_pos_pct": pct(counts["pos"], actionable), "binary_neg_pct": pct(counts["neg"], actionable),
+        "avg_confidence": round(conf_sum / total, 3) if total else 0.0,
+        "verified_count": verified, "profanity_count": profanity,
+        "by_program": sorted(by_program.values(), key=lambda x: -x["total"]),
+        "by_term": sorted(by_term.values(), key=lambda x: x["term"], reverse=True),
+        "by_source": sorted(by_source.values(), key=lambda x: -x["total"]),
+        "by_aspect": list(by_aspect.values()),
+    })
+
 @app.route('/api/analytics/keywords', methods=['GET'])
 @login_required
 @api_guard
