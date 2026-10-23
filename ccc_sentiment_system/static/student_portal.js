@@ -320,7 +320,7 @@ function runSplash(initialLoad) {
 const currentUserRole = window.APP_USER_ROLE || 'Student - Regular';
 const currentUserDept = window.APP_USER_DEPT || 'DCI';
 const roleLower = currentUserRole.toLowerCase();
-const isAuthorizedAnnouncer = roleLower.includes('officer') || roleLower.includes('representative') || roleLower.includes('rep') || roleLower.includes('faculty') || roleLower.includes('misd');
+const isAuthorizedAnnouncer = roleLower.includes('officer') || roleLower.includes('representative') || roleLower.includes('rep') || roleLower.includes('faculty') || roleLower.includes('developer') || roleLower.includes('misd');
 
 let activeChannel = "ALL";
 let activeFormUnderFill = null;
@@ -2373,6 +2373,9 @@ function buildStudentTourSteps() {
     if (isAuthorizedAnnouncer) steps.push(
         { target: '#createSurveyBtn', before: goSurveys, title: "Create a Survey", body: "Build your own survey with star ratings (1 to 5), multiple-choice, and written questions. You can also pick colors, add a header picture, and set a deadline or response limit." },
         { target: '#btnToggleAuthored', before: goSurveys, title: "Manage Your Surveys", body: "Open <strong>Surveys You Created</strong> to edit your survey, copy a share link to send to classmates, view the results, or download the answers as a spreadsheet (CSV)." }
+    );
+    if (document.getElementById('lxSidebarDashLink')) steps.push(
+        { target: '#lxSidebarDashLink', title: "Analytics Dashboard", body: "As a student leader or faculty member, use <strong>📊 Analytics Dashboard</strong> in this left menu to open the evaluation dashboard. It is also your way back to the dashboard from here." }
     );
     steps.push(
         { target: '#themeToggle', title: "Light or Dark Mode", body: "Switch between dark and light mode anytime. The portal remembers what you prefer." },
