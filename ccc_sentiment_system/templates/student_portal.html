@@ -316,9 +316,29 @@
             <label style="font-size:0.74rem; color:var(--text-muted); display:block; margin-bottom:4px;">Reference Link (optional)</label>
             <input type="url" id="editPostLinkUrl" placeholder="https://portal.edu.ph/schedule" class="text-input">
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
-                <button class="btn-nav" onclick="closeEditModal()">Cancel</button>
-                <button class="btn-action" onclick="submitEditPost()">Save Changes</button>
+            <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap;">
+                <button type="button" class="btn-nav" onclick="openDeletePostModalFromEdit()" style="background: rgba(244, 63, 94, 0.12); border-color: rgba(244, 63, 94, 0.4); color: #fb7185; font-weight: 700;">
+                    🗑️ Delete Post
+                </button>
+                <div style="display: flex; gap: 10px; margin-left: auto;">
+                    <button type="button" class="btn-nav" onclick="closeEditModal()">Cancel</button>
+                    <button type="button" class="btn-action" onclick="submitEditPost()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Post Confirmation Modal -->
+    <div id="deletePostModal" class="modal-overlay">
+        <div class="modal-sheet" style="max-width: 420px; text-align: left;">
+            <h4 style="color: var(--text-heading); font-size: 1.15rem; margin-bottom: 8px;">🗑️ Delete This Post?</h4>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px; line-height: 1.55;">
+                This post, its votes, and all discussion comments will be permanently removed from the Town Hall feed and sentiment analytics. This action cannot be undone.
+            </p>
+            <input type="hidden" id="deletePostTargetId">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-nav" onclick="closeDeletePostModal()">Cancel</button>
+                <button type="button" class="btn-action" style="background: linear-gradient(135deg, #ef4444, #be123c);" onclick="confirmDeletePost()">Delete Permanently</button>
             </div>
         </div>
     </div>
@@ -663,7 +683,7 @@
                             <span>📋</span>
                             <span>Formal Surveys</span>
                         </button>
-                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                        {% if 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                         <a href="{{ url_for('dashboard') }}" id="lxSidebarDashLink" onclick="window._loggingOut=true;" class="sidebar-nav-btn" style="text-decoration:none; color:#38bdf8; border:1px solid rgba(56,189,248,0.3); background:rgba(14,165,233,0.1);">
                             <span>📊</span>
                             <span>Analytics Dashboard</span>
