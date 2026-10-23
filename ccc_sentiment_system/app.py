@@ -1087,6 +1087,9 @@ def signup():
         if existing_user:
             if not existing_user.is_verified:
                 session['pending_verification_email'] = existing_user.email
+                existing_user.role = selected_role
+                existing_user.program = ", ".join(cleaned_programs) if cleaned_programs else "General"
+                existing_user.set_password(password)
                 existing_user.privacy_consent_at = datetime.utcnow()
                 flash("An uncompleted registration exists. Enter your new verification code below.")
                 code = issue_otp(existing_user)
@@ -1196,7 +1199,7 @@ def login():
 
                 if pending_share and SHARE_TOKEN_RE.match(str(pending_share)):
                     return redirect(url_for('open_shared_form', token=pending_share))
-                return redirect(url_for('student_portal') if (str(user.role or '').strip().lower() in ('student', 'student - regular', 'regular student')) else url_for('dashboard'))
+                return redirect(url_for('student_portal') if _is_student(user) else url_for('dashboard'))
             else:
                 user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
                 if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
@@ -2325,16 +2328,33 @@ def _is_dev(u=None):
     u = u or current_user
     return str(getattr(u, "role", "") or "").strip().upper() in ("DEVELOPER", "MISD", "ADMIN")
 
-def _is_evaluator(u=None):
+def _is_faculty(u=None):
     u = u or current_user
     r = str(getattr(u, "role", "") or "").strip().lower()
-    return _is_dev(u) or ("faculty" in r) or ("officer" in r) or ("representative" in r)
+    return "faculty" in r
 
-def _is_student():
-    r = str(getattr(current_user, "role", "") or "").strip().lower()
-    if "officer" in r or "representative" in r or "faculty" in r or _is_dev():
+def _is_evaluator(u=None):
+    # Only Developers can batch-import or rollback institutional CSV datasets
+    return _is_dev(u)
+
+def _is_student(u=None):
+    u = u or current_user
+    if _is_dev(u) or _is_faculty(u):
         return False
-    return r.startswith("student")
+    return True
+
+def _allowed_programs_for_user(u=None):
+    """Returns None for Developers (all programs allowed), or a list of ['BSCS'], ['BSIT'], etc. for Faculty."""
+    u = u or current_user
+    if _is_dev(u):
+        return None
+    raw_prog = str(getattr(u, "program", "") or "").upper()
+    allowed = []
+    if "BSCS" in raw_prog or "COMPUTER SCIENCE" in raw_prog:
+        allowed.append("BSCS")
+    if "BSIT" in raw_prog or "INFORMATION TECHNOLOGY" in raw_prog:
+        allowed.append("BSIT")
+    return allowed if allowed else ["BSCS", "BSIT"]
 
 def _privacy_exempt(): return _is_dev()
 
@@ -2758,14 +2778,24 @@ def get_analytics():
     exclude_neutral = request.args.get('binary', '0').strip() == '1'
 
     query = Feedback.query.filter_by(department="DCI")
-    
-    if selected_program != 'ALL': query = query.filter(Feedback.program.ilike(f"%{selected_program}%"))
+    allowed_progs = _allowed_programs_for_user()
+    if allowed_progs is not None:
+        from sqlalchemy import or_
+        if selected_program in allowed_progs:
+            query = query.filter(Feedback.program.ilike(f"%{selected_program}%"))
+        else:
+            selected_program = "/".join(allowed_progs)
+            query = query.filter(or_(*[Feedback.program.ilike(f"%{p}%") for p in allowed_progs]))
+    elif selected_program != 'ALL':
+        query = query.filter(Feedback.program.ilike(f"%{selected_program}%"))
     if exclude_neutral:
         query = query.filter(func.lower(Feedback.sentiment).in_(['positive', 'negative']))
     elif selected_sentiment.upper() != 'ALL':
         query = query.filter(func.lower(Feedback.sentiment) == selected_sentiment.lower())
     if selected_year != 'ALL': query = query.filter_by(academic_year=selected_year)
     if selected_sem != 'ALL': query = query.filter_by(semester=selected_sem)
+    if not _is_dev() and source_filter == 'Testing': source_filter = 'ALL'
+    if not _is_dev(): query = query.filter(Feedback.source != 'Testing')
     if source_filter != 'ALL': query = query.filter_by(source=source_filter)
     if search_query: query = query.filter((Feedback.raw_text.ilike(f"%{search_query}%")))
 
