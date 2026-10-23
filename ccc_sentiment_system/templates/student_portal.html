@@ -11,7 +11,7 @@
         })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Student Community Portal — City College of Calamba</title>
+    <title>LexiMetrix — Student Feedback & Community Portal</title>
     <!-- CSRF Token injected for security -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
@@ -23,18 +23,191 @@
     <!-- EXTERNAL CSS -->
     <link rel="stylesheet" href="{{ asset_url('student_portal.css') }}">
     <link rel="stylesheet" href="{{ asset_url('tour.css') }}">
+
+    <style>
+        /* ===== LEXIMETRIX STUDENT PORTAL: LIVELY MOTION SUITE & BINARY LOGO MORPH ===== */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: -20%;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 16% 20%, rgba(14, 165, 233, 0.13) 0%, transparent 42%),
+                radial-gradient(circle at 84% 26%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 50% 82%, rgba(16, 185, 129, 0.10) 0%, transparent 48%);
+            filter: blur(45px);
+            animation: lxPortalAurora 16s ease-in-out infinite alternate;
+        }
+        html[data-theme="light"] body::before {
+            background:
+                radial-gradient(circle at 16% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 42%),
+                radial-gradient(circle at 84% 26%, rgba(99, 102, 241, 0.07) 0%, transparent 45%),
+                radial-gradient(circle at 50% 82%, rgba(16, 185, 129, 0.06) 0%, transparent 48%);
+        }
+        @keyframes lxPortalAurora {
+            0%   { transform: translate3d(0, 0, 0) scale(1); }
+            50%  { transform: translate3d(2%, -2%, 0) scale(1.05); }
+            100% { transform: translate3d(-2%, 2%, 0) scale(0.98); }
+        }
+        @keyframes lxPortalSpringUp {
+            0%   { opacity: 0; transform: translateY(18px) scale(0.985); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes lxPortalValPop {
+            0%   { transform: scale(1); }
+            45%  { transform: scale(1.08); filter: brightness(1.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .lx-val-pop {
+            animation: lxPortalValPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Staggered Spring Entrances */
+        .welcome-card          { animation: lxPortalSpringUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.06s backwards; }
+        .community-pulse-card  { animation: lxPortalSpringUp 0.60s cubic-bezier(0.16, 1, 0.3, 1) 0.14s backwards; }
+        .portal-sidebar        { animation: lxPortalSpringUp 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.20s backwards; }
+        .townhall-compose-card { animation: lxPortalSpringUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.26s backwards; }
+        .townhall-feed > *, .forms-grid > * {
+            animation: lxPortalSpringUp 0.48s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+        }
+        .townhall-feed > *:hover, .forms-grid > *:hover {
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.38);
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35), 0 0 20px rgba(14, 165, 233, 0.12);
+        }
+
+        /* Cursor-Tracking Spotlight Glow on Portal Cards */
+        .welcome-card, .community-pulse-card, .townhall-compose-card, .pulse-stat-box {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .welcome-card::after, .community-pulse-card::after, .townhall-compose-card::after, .pulse-stat-box::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 0%), rgba(56, 189, 248, 0.11), transparent 65%);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .welcome-card:hover::after, .community-pulse-card:hover::after, .townhall-compose-card:hover::after, .pulse-stat-box:hover::after {
+            opacity: 1;
+        }
+        .pulse-stat-box:hover {
+            transform: translateY(-4px) scale(1.015);
+            border-color: rgba(56, 189, 248, 0.35);
+        }
+
+        /* Back to Dashboard Button Styling */
+        .lx-back-dash-btn {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(56, 189, 248, 0.5) !important;
+            font-weight: 800 !important;
+            text-decoration: none !important;
+            box-shadow: 0 6px 18px rgba(14, 165, 233, 0.32) !important;
+        }
+        .lx-back-dash-btn:hover {
+            transform: translateY(-1px) scale(1.02) !important;
+            filter: brightness(1.12) !important;
+        }
+
+        /* Splash Binary Ring & Converging Bits */
+        .splash-emblem-wrap {
+            position: relative;
+            width: 132px;
+            height: 132px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .splash-emblem {
+            width: 104px !important;
+            height: 104px !important;
+            position: relative;
+            z-index: 3;
+            filter: drop-shadow(0 0 26px rgba(16, 185, 129, 0.65)) drop-shadow(0 0 42px rgba(56, 189, 248, 0.35));
+            animation: lxSplashLogoMorph 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes lxSplashLogoMorph {
+            0%   { filter: drop-shadow(0 0 32px rgba(74, 222, 128, 0.95)) hue-rotate(-35deg) brightness(1.35); transform: scale(0.84); }
+            55%  { filter: drop-shadow(0 0 28px rgba(16, 185, 129, 0.85)) hue-rotate(-10deg) brightness(1.15); transform: scale(1.04); }
+            100% { filter: drop-shadow(0 0 24px rgba(56, 189, 248, 0.55)); transform: scale(1); }
+        }
+        .lx-binary-ring {
+            position: absolute;
+            inset: -14px;
+            border-radius: 34px;
+            border: 1.5px dashed rgba(74, 222, 128, 0.55);
+            box-shadow: 0 0 28px rgba(16, 185, 129, 0.35), inset 0 0 18px rgba(16, 185, 129, 0.22);
+            pointer-events: none;
+            z-index: 2;
+            animation: lxBinaryRingConverge 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes lxBinaryRingConverge {
+            0%   { opacity: 0; transform: scale(1.45) rotate(-25deg); border-color: rgba(74, 222, 128, 0.9); }
+            40%  { opacity: 1; border-color: rgba(52, 211, 153, 0.85); }
+            85%  { opacity: 0.75; transform: scale(0.92) rotate(8deg); border-color: rgba(56, 189, 248, 0.7); }
+            100% { opacity: 0; transform: scale(0.78) rotate(15deg); }
+        }
+        .lx-binary-bit {
+            position: absolute;
+            font-family: 'Courier New', Consolas, monospace;
+            font-size: 0.74rem;
+            font-weight: 900;
+            color: #4ade80;
+            text-shadow: 0 0 8px #10b981, 0 0 14px #22c55e;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0;
+            animation: lxBitConverge 1.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes lxBitConverge {
+            0%   { opacity: 0; transform: translate(var(--bx, 0px), var(--by, -40px)) scale(1.2); color: #bbf7d0; }
+            25%  { opacity: 1; color: #4ade80; }
+            75%  { opacity: 0.9; transform: translate(calc(var(--bx, 0px) * 0.25), calc(var(--by, 0px) * 0.25)) scale(0.95); color: #10b981; }
+            100% { opacity: 0; transform: translate(0px, 0px) scale(0.2); color: #38bdf8; }
+        }
+        .brand-logo-img, .sidebar-brand-logo {
+            cursor: pointer;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.35s ease;
+            filter: drop-shadow(0 4px 14px rgba(16, 185, 129, 0.35));
+        }
+        .brand-logo-img:hover, .sidebar-brand-logo:hover {
+            transform: scale(1.1) rotate(-2deg);
+            filter: drop-shadow(0 0 16px rgba(74, 222, 128, 0.85)) drop-shadow(0 0 24px rgba(56, 189, 248, 0.55));
+        }
+        .sidebar-nav-btn, .survey-subtab-btn, .btn-nav, .btn-action {
+            transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease !important;
+        }
+        .sidebar-nav-btn:hover {
+            transform: translateX(4px);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            body::before, .welcome-card, .community-pulse-card, .portal-sidebar, .townhall-compose-card, .townhall-feed > *, .forms-grid > *, .lx-binary-ring, .lx-binary-bit {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+
 </head>
 <body>
     <!-- CINEMATIC UNVEILING INTRO / WELCOME SPLASH -->
     <div id="splashCurtain" class="splash-curtain" role="status" aria-live="polite">
         <div class="splash-aura"></div>
-        <div class="splash-emblem-wrap">
-            <img src="{{ url_for('static', filename='ccclogo.png') }}" alt="City College of Calamba Emblem" class="splash-emblem">
+        <div class="splash-emblem-wrap" id="splashEmblemWrap">
+            <div class="lx-binary-ring"></div>
+            <img src="/leximetrix-logo.svg" onerror="this.onerror=null;this.src='/static/leximetrix-logo.svg';" alt="LexiMetrix Emblem" class="splash-emblem" id="splashLogoImg">
         </div>
         <div class="splash-content">
-            <div class="splash-tag">Student Community Portal</div>
-            <h1 class="splash-title">City College of Calamba</h1>
-            <p class="splash-subtitle">Bilingual (Taglish) Sentiment Analysis & Student Feedback Portal</p>
+            <div class="splash-tag">Multilingual NLP Feedback &amp; Survey Portal</div>
+            <h1 class="splash-title">LexiMetrix Community</h1>
+            <p class="splash-subtitle">Participatory Student Voice, Real-Time Town Hall &amp; Formal Evaluations</p>
             <div class="splash-loader-bar">
                 <div class="splash-loader-fill"></div>
             </div>
@@ -79,11 +252,11 @@
     <!-- Student sign-out farewell screen (shown by confirmLogout) -->
     <div id="farewellScreen" class="farewell-screen" role="alertdialog" aria-live="polite" aria-labelledby="farewellTitle">
         <div class="farewell-aura"></div>
-        <img src="{{ url_for('static', filename='ccclogo.png') }}" alt="" class="farewell-emblem">
+        <img src="/leximetrix-logo.svg" onerror="this.onerror=null;this.src='/static/leximetrix-logo.svg';" alt="LexiMetrix Emblem" class="farewell-emblem">
         <div class="farewell-body">
             <div class="farewell-tag">Signing out</div>
             <h2 id="farewellTitle" class="farewell-title">Salamat sa pakikibahagi, <span id="farewellName">{{ username }}</span>!</h2>
-            <p class="farewell-sub">Salamat sa pagbabahagi ng boses mo. Ang bawat opinyon mo ay nakakatulong para mapabuti ang City College of Calamba. Your feedback makes a real difference.</p>
+            <p class="farewell-sub">Salamat sa pagbabahagi ng boses mo sa LexiMetrix Community Portal. Your feedback makes a real difference.</p>
             <div class="farewell-bar"></div>
             <div id="farewellStatus" class="farewell-status">Isinasara ang iyong session nang ligtas...</div>
             <button type="button" id="farewellRetry" class="btn-action farewell-retry" onclick="retryLogout()">Taking long? Try again</button>
@@ -155,7 +328,7 @@
             </div>
 
             <label style="font-size:0.74rem; color:var(--text-muted); display:block; margin-bottom:4px;">Reference Link (optional)</label>
-            <input type="url" id="editPostLinkUrl" placeholder="https://ccc.edu.ph/schedule" class="text-input">
+            <input type="url" id="editPostLinkUrl" placeholder="https://portal.edu.ph/schedule" class="text-input">
 
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
                 <button class="btn-nav" onclick="closeEditModal()">Cancel</button>
@@ -401,14 +574,19 @@
             <button class="btn-menu-drawer" onclick="toggleMobileDrawer()" title="Open Navigation Menu">
                 ☰
             </button>
-            <img src="{{ url_for('static', filename='ccclogo.png') }}" alt="CCC Logo" class="brand-logo-img">
+            <img src="/leximetrix-logo.svg" onerror="this.onerror=null;this.src='/static/leximetrix-logo.svg';" alt="LexiMetrix Logo" class="brand-logo-img" id="topbarLogoImg" onclick="replayLogoBinaryMorph(this)" onmouseenter="replayLogoBinaryMorph(this)" title="Click or hover to replay Binary Code-to-Logo Morph">
             <div class="brand-text-block">
-                <div class="brand-title">Student Community Portal</div>
-                <div class="brand-subtitle">City College of Calamba</div>
+                <div class="brand-title">LexiMetrix Portal</div>
+                <div class="brand-subtitle">Student Voice &amp; Evaluation Hub</div>
             </div>
         </div>
         <div class="nav-actions">
-            <span class="role-badge">{{ role }}</span>
+            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+            <a href="{{ url_for('dashboard') }}" id="lxTopBackDashBtn" onclick="window._loggingOut=true;" class="btn-nav lx-back-dash-btn" title="Return to LexiMetrix Analytics Dashboard">
+                📊 <span class="btn-label">Back to Dashboard</span>
+            </a>
+            {% endif %}
+            <span class="role-badge">{{ 'Developer' if role.upper() == 'MISD' else role }}</span>
             <span class="user-name-display">{{ username }}</span>
             <button type="button" id="tourBtn" class="btn-nav btn-tour" onclick="CCCTour.start()" title="Take a guided tour of the portal" aria-label="Take a guided tour">❓ <span class="btn-label">Tour</span></button>
             <button type="button" id="themeToggle" class="btn-nav theme-toggle" onclick="toggleTheme()" aria-label="Switch to light mode" aria-pressed="false" title="Switch to light mode">&#9728;&#65039;</button>
@@ -425,7 +603,7 @@
                     Your feedback is analyzed by our AI engine to support peer representation and institutional action.
                 </div>
             </div>
-            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'misd' in role.lower() %}
+            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
             <button class="btn-action" id="createSurveyBtn" onclick="openCreateFormModal()">+ Create Formal Survey</button>
             {% endif %}
         </section>
@@ -484,10 +662,10 @@
                 <!-- MOBILE-ONLY HEADER LOCKUP -->
                 <div class="sidebar-brand-header">
                     <div class="sidebar-brand-content">
-                        <img src="{{ url_for('static', filename='ccclogo.png') }}" alt="CCC Logo" class="sidebar-brand-logo">
+                        <img src="/leximetrix-logo.svg" onerror="this.onerror=null;this.src='/static/leximetrix-logo.svg';" alt="LexiMetrix Logo" class="sidebar-brand-logo" onclick="replayLogoBinaryMorph(this)">
                         <div>
-                            <div class="sidebar-brand-title">Student Community Portal</div>
-                            <div class="sidebar-brand-subtitle">City College of Calamba</div>
+                            <div class="sidebar-brand-title">LexiMetrix Portal</div>
+                            <div class="sidebar-brand-subtitle">Student Voice &amp; Evaluation Hub</div>
                         </div>
                     </div>
                     <button type="button" class="btn-nav" onclick="closeMobileDrawer()" style="padding: 4px 8px; font-size: 0.75rem;">✕</button>
@@ -504,6 +682,12 @@
                             <span>📋</span>
                             <span>Formal Surveys</span>
                         </button>
+                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                        <a href="{{ url_for('dashboard') }}" onclick="window._loggingOut=true;" class="sidebar-nav-btn" style="text-decoration:none; color:#38bdf8; border:1px solid rgba(56,189,248,0.3); background:rgba(14,165,233,0.1);">
+                            <span>📊</span>
+                            <span>Analytics Dashboard</span>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -558,7 +742,7 @@
                             <div class="anonymity-banner" id="composeAnonymityBadge">🛡️ 100% Anonymous Voice</div>
                         </div>
 
-                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'misd' in role.lower() %}
+                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                         <div style="margin-bottom: 10px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.35); padding: 7px 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px;" id="announcementCheckboxContainer">
                             <input type="checkbox" id="townIsAnnouncement" onchange="toggleAnnouncementMode(this.checked)" style="accent-color: #f59e0b; width: 16px; height: 16px; cursor: pointer;">
                             <label for="townIsAnnouncement" style="font-size: 0.78rem; font-weight: 700; color: var(--txt-gold); cursor: pointer;">
@@ -598,7 +782,7 @@
                         <div class="compose-main-grid">
                             <select id="townTargetChannel" class="select-input" style="margin-bottom:0;">
                                 <option value="ALL">Post to: Campus-Wide (All)</option>
-                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'misd' in role.lower() %}
+                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                                 <option value="ANNOUNCEMENTS">Post to: Official Announcements</option>
                                 {% endif %}
                                 <option value="DCI">Post to: DCI Channel</option>
@@ -624,7 +808,7 @@
                                 <input type="text" id="townImageUrl" placeholder="Or drag image file here / paste image URL..." class="image-drop-input" oninput="handleUrlTyped('town')">
                             </div>
 
-                            <input type="url" id="townLinkUrl" placeholder="🔗 Resource Link (optional): https://ccc.edu.ph/..." class="text-input" style="margin-bottom:0; font-size:0.78rem;">
+                            <input type="url" id="townLinkUrl" placeholder="🔗 Resource Link (optional): https://portal.edu.ph/..." class="text-input" style="margin-bottom:0; font-size:0.78rem;">
                         </div>
 
                         <div class="image-preview-badge" id="townPreviewBadge">
@@ -671,7 +855,7 @@
                             <div class="surveys-overview-title">Formal Surveys</div>
                             <div class="surveys-overview-sub">Structured evaluations analyzed by our sentiment engine to surface actionable feedback.</div>
                         </div>
-                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'misd' in role.lower() %}
+                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                         <button class="btn-nav" id="btnToggleAuthored" onclick="toggleAuthoredSurveys()" style="color:var(--txt-gold); border-color:rgba(245,158,11,0.4);">
                             🧾 View Surveys Initiated by You
                         </button>
@@ -696,7 +880,7 @@
                         <div id="availableFormsContainer" class="forms-grid"></div>
                     </div>
                     
-                    {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'misd' in role.lower() %}
+                    {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                     <div id="paneMySurveys" style="display:none;">
                         <div class="my-surveys-head">
                             <button class="btn-nav" onclick="toggleAuthoredSurveys()">❮ Back to Student Surveys</button>
@@ -779,6 +963,80 @@
     <!-- EXTERNAL JAVASCRIPT -->
     <script src="{{ asset_url('tour.js') }}"></script>
     <script src="{{ asset_url('student_portal.js') }}"></script>
+
+
+    <script>
+        // ==========================================================
+        // LEXIMETRIX STUDENT PORTAL: BINARY MORPH & MOTION ENHANCERS
+        // ==========================================================
+        let _lastPortalLogoReplay = 0;
+        function replayLogoBinaryMorph(imgEl) {
+            if (!imgEl) return;
+            const now = Date.now();
+            if (now - _lastPortalLogoReplay < 2300) return;
+            _lastPortalLogoReplay = now;
+            const baseSrc = imgEl.src.includes('/static/leximetrix-logo.svg') ? '/static/leximetrix-logo.svg' : '/leximetrix-logo.svg';
+            imgEl.src = baseSrc + '?morph=' + now;
+        }
+
+        function spawnPortalSplashBinary() {
+            const wrap = document.getElementById('splashEmblemWrap');
+            if (!wrap) return;
+            const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduced) return;
+
+            const bits = ['01', '10', '11', '00', '010', '101', '110', '001', '01', '10', '11', '01', '10', '00', '11', '01'];
+            bits.forEach((b, i) => {
+                const span = document.createElement('span');
+                span.className = 'lx-binary-bit';
+                span.textContent = b;
+                const angle = (i / bits.length) * Math.PI * 2;
+                const radius = 68 + (i % 3) * 22;
+                span.style.setProperty('--bx', Math.round(Math.cos(angle) * radius) + 'px');
+                span.style.setProperty('--by', Math.round(Math.sin(angle) * radius) + 'px');
+                span.style.animationDelay = (i * 45) + 'ms';
+                wrap.appendChild(span);
+            });
+
+            const titleEl = document.querySelector('.splash-title');
+            if (titleEl) {
+                const finalTitle = 'LexiMetrix Community';
+                const binaryPool = '0101100100110101';
+                let frame = 0;
+                const totalFrames = 18;
+                const timer = setInterval(() => {
+                    frame++;
+                    const lockedCount = Math.floor((frame / totalFrames) * finalTitle.length);
+                    let out = '';
+                    for (let c = 0; c < finalTitle.length; c++) {
+                        if (finalTitle[c] === ' ') out += ' ';
+                        else if (c < lockedCount) out += finalTitle[c];
+                        else out += binaryPool[(c + frame) % binaryPool.length];
+                    }
+                    titleEl.textContent = out;
+                    if (frame >= totalFrames) {
+                        clearInterval(timer);
+                        titleEl.textContent = finalTitle;
+                    }
+                }, 55);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', spawnPortalSplashBinary);
+
+        // Cursor-Tracking Spotlight on Portal Cards
+        document.addEventListener('mousemove', (e) => {
+            document.querySelectorAll('.welcome-card, .community-pulse-card, .townhall-compose-card, .pulse-stat-box').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                if (
+                    e.clientX >= rect.left - 80 && e.clientX <= rect.right + 80 &&
+                    e.clientY >= rect.top - 80 && e.clientY <= rect.bottom + 80
+                ) {
+                    card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+                    card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+                }
+            });
+        }, { passive: true });
+    </script>
 
 </body>
 </html>
