@@ -384,6 +384,28 @@
         html[data-theme="light"] .csv-stat { background: #ffffff; }
         html[data-theme="light"] .csv-done-title { color: #047857; } html[data-theme="light"] .csv-stat.ok b { color: #047857; }
 
+        /* ===== TOP BAR: keep one tidy row, compact user chip ===== */
+        .topbar { column-gap: 16px; }
+        .btn-nav { white-space: nowrap; }
+        .nav-actions { flex-wrap: nowrap; min-width: 0; }
+        .nav-actions > * { flex-shrink: 0; }
+        .brand-unit { min-width: 0; flex-shrink: 1; }
+        .brand-unit > div:last-child { min-width: 0; }
+        .brand-subtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nav-userchip { display: flex; align-items: center; gap: 9px; padding: 4px 14px 4px 5px; border: 1px solid var(--border-light); border-radius: 999px; background: rgba(255, 255, 255, 0.04); max-width: 200px; min-width: 0; flex-shrink: 1 !important; }
+        .nav-avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; font-size: 0.82rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #3b82f6, #0ea5e9); }
+        .nav-usertext { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+        .nav-user { font-size: 0.82rem; font-weight: 700; color: var(--text-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+        .nav-userchip .role-badge { align-self: flex-start; padding: 0; border: 0; background: transparent; font-size: 0.6rem; letter-spacing: 0.6px; }
+        html[data-theme="light"] .nav-userchip { background: rgba(15, 23, 42, 0.04); }
+        html[data-theme="light"] .nav-userchip .role-badge { background: transparent; border: 0; }
+        @media (max-width: 1650px) { .brand-subtitle { display: none; } }
+        @media (max-width: 1400px) { .nav-actions { gap: 5px; } .nav-actions .btn-nav { padding: 8px 11px; font-size: 0.74rem; } }
+        @media (min-width: 901px) and (max-width: 1250px) {
+            .topbar { height: auto; min-height: 76px; padding-top: 8px; padding-bottom: 8px; row-gap: 8px; flex-wrap: wrap; }
+            .nav-actions { flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; }
+        }
+
         /* ===== MOBILE POLISH (phones and touch screens) ===== */
         button, a, select, .btn-nav, .btn-action, .dept-tab, .source-tab, .btn-page { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         @media (max-width: 900px) {
@@ -432,7 +454,7 @@
             .nav-actions::-webkit-scrollbar { display: none; }
             .nav-actions > * { flex: 0 0 auto; white-space: nowrap; }
             .nav-actions .btn-nav { padding: 8px 12px; font-size: 0.8rem; }
-            .nav-actions .role-badge, .nav-actions .nav-user, .nav-sep { display: none; }
+            .nav-actions .nav-userchip, .nav-actions .role-badge, .nav-actions .nav-user, .nav-sep { display: none; }
         }
         @media (hover: none) and (pointer: coarse) {
             .btn-nav, .btn-action, .dept-tab, .source-tab, .btn-page, .term-select { min-height: 44px; }
@@ -1371,8 +1393,13 @@
             <button class="btn-nav" id="evalNavBtn" onclick="openModelEvalModal()" style="border-color:rgba(16,185,129,0.45); color:#34d399; font-weight:700;">📊 AI Evaluation (F1)</button>
             {% endif %}
             <span class="nav-sep" style="font-size:0.82rem; color:var(--text-muted); margin: 0 4px;">|</span>
-            <span class="role-badge">{{ role }}</span>
-            <span class="nav-user" style="font-size:0.86rem; font-weight:600; color:var(--text-title);">{{ username }}</span>
+            <div class="nav-userchip" title="{{ username }} &middot; {{ role }}">
+                <span class="nav-avatar" aria-hidden="true">{{ (username or '?')[:1]|upper }}</span>
+                <span class="nav-usertext">
+                    <span class="nav-user">{{ username }}</span>
+                    <span class="role-badge">{{ role }}</span>
+                </span>
+            </div>
             <button type="button" id="themeToggle" class="btn-nav theme-toggle" onclick="toggleTheme()" aria-label="Switch to light mode" aria-pressed="false" title="Switch to light mode">&#9728;&#65039;</button>
             <button class="btn-nav btn-logout" onclick="openLogoutModal()">Sign Out</button>
         </div>
