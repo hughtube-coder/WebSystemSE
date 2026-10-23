@@ -1950,6 +1950,7 @@ def edit_community_post(post_id):
     else:
         cleaned, sentiment, score, breakdown = run_absa_pipeline(new_content, get_active_lexicon())
 
+    old_content = post.content
     had_profanity = has_profanity(new_content)
     new_content, cleaned, breakdown = mask_profanity(new_content), mask_profanity(cleaned), mask_any(breakdown)
     post.content = new_content; post.category = sfield(data, "category", post.category, max_len=100) or post.category
@@ -1962,8 +1963,49 @@ def edit_community_post(post_id):
     post.sentiment = sentiment; post.confidence = score; post.aspect_breakdown = json.dumps(breakdown)
     post.is_edited = True; post.edited_at = datetime.utcnow()
 
+    # Keep the corresponding Portal Feedback record in sync when edited
+    if not post.is_announcement and old_content:
+        matching_fb = Feedback.query.filter_by(department="DCI", source="Portal", raw_text=old_content).order_by(Feedback.id.desc()).first()
+        if matching_fb:
+            matching_fb.raw_text = new_content
+            matching_fb.cleaned_text = cleaned
+            if not matching_fb.human_sentiment:
+                matching_fb.sentiment = sentiment
+            matching_fb.ai_sentiment = sentiment
+            matching_fb.confidence = score
+            matching_fb.aspect_breakdown = json.dumps(breakdown)
+            matching_fb.has_profanity = had_profanity
+            _chart_cache.clear()
+
     db.session.commit()
     return jsonify({"success": True, "message": "Post updated successfully.", "masked": had_profanity})
+
+@app.route('/api/community_post/<int:post_id>/delete', methods=['POST'])
+@login_required
+@api_guard
+def delete_community_post(post_id):
+    post = db.session.get(CommunityPost, post_id)
+    if not post:
+        return jsonify({"error": "Post not found."}), 404
+    if post.author_id != current_user.id and not _is_dev():
+        return jsonify({"error": "Unauthorized to delete this post."}), 403
+
+    if not post.is_announcement and post.content:
+        matching_fb = Feedback.query.filter_by(
+            department="DCI",
+            source="Portal",
+            raw_text=post.content
+        ).order_by(Feedback.id.desc()).first()
+        if matching_fb:
+            db.session.delete(matching_fb)
+
+    CommunityPostVote.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+    CommunityResolutionVote.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+    CommunityComment.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+    db.session.delete(post)
+    db.session.commit()
+    _chart_cache.clear()
+    return jsonify({"success": True, "message": "Post deleted successfully."})
 
 @app.route('/api/community_post/vote', methods=['POST'])
 @login_required
@@ -3371,6 +3413,33 @@ def override_feedback_sentiment(feedback_id):
         "verified_by": entry.verified_by,
         "verified_at": entry.verified_at.strftime("%Y-%m-%d %H:%M")
     })
+
+
+@app.route('/api/feedback/<int:feedback_id>/delete', methods=['POST'])
+@login_required
+@api_guard
+def delete_feedback_record(feedback_id):
+    if not _is_dev():
+        return jsonify({"error": "Only Developer administrators can delete feedback records."}), 403
+    entry = db.session.get(Feedback, feedback_id)
+    if not entry:
+        return jsonify({"error": "Feedback record not found."}), 404
+
+    if entry.source == "Portal" and entry.form_id is None and entry.raw_text:
+        matching_post = CommunityPost.query.filter_by(
+            is_announcement=False,
+            content=entry.raw_text
+        ).order_by(CommunityPost.id.desc()).first()
+        if matching_post:
+            CommunityPostVote.query.filter_by(post_id=matching_post.id).delete(synchronize_session=False)
+            CommunityResolutionVote.query.filter_by(post_id=matching_post.id).delete(synchronize_session=False)
+            CommunityComment.query.filter_by(post_id=matching_post.id).delete(synchronize_session=False)
+            db.session.delete(matching_post)
+
+    db.session.delete(entry)
+    db.session.commit()
+    _chart_cache.clear()
+    return jsonify({"success": True, "id": feedback_id})
 
 @app.route('/api/model_evaluation', methods=['GET'])
 @login_required
