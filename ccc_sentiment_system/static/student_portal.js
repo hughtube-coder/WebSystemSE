@@ -1808,7 +1808,7 @@ function renderTownHallFeed() {
                 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">
                     ${p.is_announcement ? '' : `<span class="post-cat-badge" style="background:rgba(37,99,235,0.15); color:var(--txt-blue);">AI Evaluated: ${esc(p.sentiment)}</span>`}
                     <button type="button" class="comments-toggle-btn" id="commentsBtn_${p.id}" aria-expanded="false" aria-controls="commentsThread_${p.id}" onclick="toggleComments(${p.id})"><span class="ct-ic" aria-hidden="true">💬</span><span class="ct-label" id="commentsLabel_${p.id}">${commentButtonLabel(p.comment_count, false)}</span><span class="ct-caret" aria-hidden="true">▾</span></button>
-                    ${p.can_edit ? `<button onclick="openEditModal(${p.id})" style="background:none; border:none; color:var(--txt-blue); font-size:0.75rem; font-weight:700; cursor:pointer; text-decoration:underline;">✏️ Edit Post</button>` : ''}
+                    ${p.can_edit ? `<button onclick="openEditModal(${p.id})" style="background:none; border:none; color:var(--txt-blue); font-size:0.75rem; font-weight:700; cursor:pointer; text-decoration:underline;">✏️ Edit Post</button><button onclick="openDeletePostModal(${p.id})" style="background:none; border:none; color:var(--txt-red); font-size:0.75rem; font-weight:700; cursor:pointer; text-decoration:underline;">🗑️ Delete</button>` : ''}
                     ${isAuthorizedAnnouncer ? `<button onclick="openActionModal(${p.id}, '${esc(p.status)}')" style="background:none; border:none; color:var(--txt-gold); font-size:0.75rem; font-weight:700; cursor:pointer; text-decoration:underline;">✍ Post Resolution</button>` : ''}
                 </div>
                 ${resolutionHTML}
@@ -1957,6 +1957,49 @@ function openEditModal(postId) {
 
 function closeEditModal() { closeModal('editPostModal'); }
 
+function openDeletePostModal(postId) {
+    const inp = document.getElementById('deletePostTargetId');
+    if (inp) inp.value = postId;
+    openModal('deletePostModal');
+}
+
+function openDeletePostModalFromEdit() {
+    const postId = document.getElementById('editPostId')?.value;
+    if (!postId) return;
+    closeEditModal();
+    setTimeout(() => openDeletePostModal(postId), 180);
+}
+
+function closeDeletePostModal() {
+    closeModal('deletePostModal');
+}
+
+async function confirmDeletePost() {
+    const postId = document.getElementById('deletePostTargetId')?.value;
+    if (!postId) return;
+    closeDeletePostModal();
+    showLoader("Deleting post...");
+    try {
+        const res = await apiFetch(`/api/community_post/${postId}/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast("Post deleted permanently.", 'success');
+            fetchTownHallFeed();
+            fetchCommunityPulse();
+        } else {
+            showToast(data.error || "Could not delete post.", 'error');
+        }
+    } catch (e) {
+        showToast(e.userMessage || "Server error while deleting post.", 'error');
+    } finally {
+        hideLoader();
+    }
+}
+
 async function submitEditPost() {
     const postId = document.getElementById('editPostId').value;
     const content = document.getElementById('editPostContent').value.trim();
@@ -2020,12 +2063,69 @@ function _syncCommentButton(postId, open, count) {
     if (label) label.textContent = commentButtonLabel(count, open);
 }
 
-async function toggleComments(postId) {
+const COMMENTS_PER_PAGE = 5;
+const postCommentsCache = {};
+const postCommentsPage = {};
+
+function renderPaginatedComments(postId, page) {
+    const list = document.getElementById(`commentsList_${postId}`);
+    if (!list) return;
+    const comments = postCommentsCache[postId] || [];
+    if (comments.length === 0) {
+        list.innerHTML = `<div class="ct-empty">No comments yet. Start the conversation below.</div>`;
+        return;
+    }
+    const totalPages = Math.max(1, Math.ceil(comments.length / COMMENTS_PER_PAGE));
+    const currentPage = Math.min(Math.max(1, page || 1), totalPages);
+    postCommentsPage[postId] = currentPage;
+
+    const startIdx = (currentPage - 1) * COMMENTS_PER_PAGE;
+    const pageItems = comments.slice(startIdx, startIdx + COMMENTS_PER_PAGE);
+
+    const itemsHTML = pageItems.map(c => `
+        <div class="comment-item">
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-bottom:4px;">
+                <strong style="color:var(--txt-blue);">👤 Verified Student</strong>
+                <span>${esc(c.created_at)}</span>
+            </div>
+            <div style="font-size:0.84rem; color:var(--text-body);">${esc(c.content)}</div>
+        </div>
+    `).join('');
+
+    let pagerHTML = '';
+    if (totalPages > 1) {
+        let pageBtns = '';
+        for (let p = 1; p <= totalPages; p++) {
+            const activeCls = (p === currentPage) ? 'active' : '';
+            pageBtns += `<button type="button" class="ct-page-btn ${activeCls}" onclick="changeCommentPage(${postId}, ${p})">${p}</button>`;
+        }
+        const startNum = startIdx + 1;
+        const endNum = Math.min(startIdx + COMMENTS_PER_PAGE, comments.length);
+        pagerHTML = `
+            <div class="ct-pagination-bar">
+                <span class="ct-page-info">Showing ${startNum}–${endNum} of ${comments.length} comments</span>
+                <div class="ct-page-controls">
+                    <button type="button" class="ct-page-btn" onclick="changeCommentPage(${postId}, ${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>‹ Prev</button>
+                    ${pageBtns}
+                    <button type="button" class="ct-page-btn" onclick="changeCommentPage(${postId}, ${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>Next ›</button>
+                </div>
+            </div>
+        `;
+    }
+
+    list.innerHTML = itemsHTML + pagerHTML;
+}
+
+function changeCommentPage(postId, newPage) {
+    renderPaginatedComments(postId, newPage);
+}
+
+async function toggleComments(postId, jumpToLastPage = false) {
     const thread = document.getElementById(`commentsThread_${postId}`);
     if (!thread) return;
     const btn = document.getElementById(`commentsBtn_${postId}`);
     const known = btn && btn.dataset.count !== undefined ? Number(btn.dataset.count) : 0;
-    if (thread.style.display === 'flex') {
+    if (thread.style.display === 'flex' && !jumpToLastPage) {
         thread.style.display = 'none';
         _syncCommentButton(postId, false, known);
         return;
@@ -2040,18 +2140,11 @@ async function toggleComments(postId) {
         thread.style.display = 'none'; _syncCommentButton(postId, false, known);
         showToast(e.userMessage || e.message || "Could not load comments.", 'error'); return;
     }
+    postCommentsCache[postId] = comments;
     _syncCommentButton(postId, true, comments.length);
-    const list = document.getElementById(`commentsList_${postId}`);
-    list.innerHTML = (comments.length === 0) ? `<div class="ct-empty">No comments yet. Start the conversation below.</div>` :
-        comments.map(c => `
-            <div class="comment-item">
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-bottom:4px;">
-                    <strong style="color:var(--txt-blue);">👤 Verified Student</strong>
-                    <span>${esc(c.created_at)}</span>
-                </div>
-                <div style="font-size:0.84rem; color:var(--text-body);">${esc(c.content)}</div>
-            </div>
-        `).join('');
+    const totalPages = Math.max(1, Math.ceil(comments.length / COMMENTS_PER_PAGE));
+    const targetPage = jumpToLastPage ? totalPages : (postCommentsPage[postId] || 1);
+    renderPaginatedComments(postId, targetPage);
 }
 
 async function submitComment(postId) {
@@ -2062,9 +2155,7 @@ async function submitComment(postId) {
         const res = await apiFetch(`/api/community_post/${postId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN }, body: JSON.stringify({ content }) });
         if (res.ok) {
             input.value = '';
-            const thread = document.getElementById(`commentsThread_${postId}`);
-            thread.style.display = 'none';
-            toggleComments(postId);
+            await toggleComments(postId, true);
         } else { showToast((await res.json()).error || "Your reply could not be posted.", 'error'); }
     } catch (e) { showToast(e.userMessage || "Reply error.", 'error'); }
 }
