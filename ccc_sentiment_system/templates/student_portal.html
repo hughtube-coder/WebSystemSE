@@ -102,20 +102,6 @@
             border-color: rgba(56, 189, 248, 0.35);
         }
 
-        /* Back to Dashboard Button Styling */
-        .lx-back-dash-btn {
-            background: linear-gradient(135deg, #0ea5e9, #6366f1) !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(56, 189, 248, 0.5) !important;
-            font-weight: 800 !important;
-            text-decoration: none !important;
-            box-shadow: 0 6px 18px rgba(14, 165, 233, 0.32) !important;
-        }
-        .lx-back-dash-btn:hover {
-            transform: translateY(-1px) scale(1.02) !important;
-            filter: brightness(1.12) !important;
-        }
-
         /* Splash Binary Ring & Converging Bits */
         .splash-emblem-wrap {
             position: relative;
@@ -581,11 +567,6 @@
             </div>
         </div>
         <div class="nav-actions">
-            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
-            <a href="{{ url_for('dashboard') }}" id="lxTopBackDashBtn" onclick="window._loggingOut=true;" class="btn-nav lx-back-dash-btn" title="Return to LexiMetrix Analytics Dashboard">
-                📊 <span class="btn-label">Back to Dashboard</span>
-            </a>
-            {% endif %}
             <span class="role-badge">{{ 'Developer' if role.upper() == 'MISD' else role }}</span>
             <span class="user-name-display">{{ username }}</span>
             <button type="button" id="tourBtn" class="btn-nav btn-tour" onclick="CCCTour.start()" title="Take a guided tour of the portal" aria-label="Take a guided tour">❓ <span class="btn-label">Tour</span></button>
