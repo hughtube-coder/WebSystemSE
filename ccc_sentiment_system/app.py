@@ -660,6 +660,41 @@ def seed_database():
 
     db.session.commit()
 
+
+def rescore_neutral_records():
+    """Re-evaluates existing Town Hall posts and unverified Feedback rows that were stuck as Neutral."""
+    try:
+        lexicon = get_active_lexicon()
+        updated_posts = 0
+        for post in CommunityPost.query.filter_by(is_announcement=False).all():
+            if str(post.sentiment or "").strip().lower() == "neutral":
+                _, new_sent, new_conf, new_breakdown = run_absa_pipeline(post.content, lexicon)
+                if new_sent != "Neutral" or new_conf != post.confidence:
+                    post.sentiment = new_sent
+                    post.confidence = new_conf
+                    post.aspect_breakdown = json.dumps(mask_any(new_breakdown))
+                    updated_posts += 1
+
+        updated_feedback = 0
+        for fb in Feedback.query.filter(Feedback.human_sentiment.is_(None)).all():
+            if str(fb.sentiment or "").strip().lower() == "neutral":
+                cleaned, new_sent, new_conf, new_breakdown = run_absa_pipeline(fb.raw_text, lexicon)
+                if new_sent != "Neutral" or new_conf != fb.confidence:
+                    fb.cleaned_text = mask_profanity(cleaned)
+                    fb.sentiment = new_sent
+                    fb.ai_sentiment = new_sent
+                    fb.confidence = new_conf
+                    fb.aspect_breakdown = json.dumps(mask_any(new_breakdown))
+                    updated_feedback += 1
+
+        if updated_posts or updated_feedback:
+            db.session.commit()
+            _chart_cache.clear()
+            print(f"[+] Re-evaluated {updated_posts} Town Hall post(s) and {updated_feedback} Feedback record(s).")
+    except Exception as e:
+        db.session.rollback()
+        app.logger.warning(f"Rescore neutral records notice: {e}")
+
 def setup_database():
     with app.app_context():
         db.create_all()
@@ -712,6 +747,7 @@ def setup_database():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        rescore_neutral_records()
 
 @app.cli.command("create-developer")
 @click.option("--username", prompt=True)
