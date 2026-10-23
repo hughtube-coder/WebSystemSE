@@ -1384,7 +1384,7 @@
             </div>
         </div>
         <div class="nav-actions" id="navActionsTarget">
-            <a href="{{ url_for('student_portal') }}" onclick="window._loggingOut=true;" class="btn-nav" title="Switch to the Student Feedback & Survey Portal" style="text-decoration:none; border-color:rgba(99,102,241,0.4); color:#a5b4fc;">🏛️ Student Portal</a>
+            <a href="{{ url_for('student_portal') }}" id="studentPortalNavBtn" onclick="window._loggingOut=true;" class="btn-nav" title="Switch to the Student Feedback & Survey Portal" style="text-decoration:none; border-color:rgba(99,102,241,0.4); color:#a5b4fc;">🏛️ Student Portal</a>
             <button type="button" class="btn-nav btn-tour" onclick="CCCTour.start()" title="Take a guided tour of this dashboard" style="border-color:rgba(245,158,11,0.4); color:var(--txt-gold);">❓ Tour</button>
             <button class="btn-nav" onclick="openCsvModal()" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📥 Upload CSV &amp; Template</button>
             <button class="btn-nav" onclick="exportCurrentCsv()">Export CSV</button>
@@ -3434,16 +3434,46 @@
             { target: "#dataSortBarTarget", title: "3. Program, Polarity & Binary Mode", body: "Filter by <strong>BSCS</strong> or <strong>BSIT</strong>, filter by sentiment, or click <strong>⚖️ Pos vs. Neg Only</strong> to compare Positive and Negative feedback head-to-head with Neutral remarks excluded.", roles: DEV_ROLES },
             { target: "#termFilterTarget", title: "4. Academic Year & Semester Controls", body: "Filter records by Academic Year and Semester. Developers can also click <strong>📌 Set Active Term</strong> or <strong>+ Add Year</strong> to manage evaluation cycles.", roles: DEV_ROLES },
             { target: "#termFilterTarget", title: "3. Academic Year & Semester Controls", body: "Use these dropdowns to filter feedback across specific school years and semesters.", notRoles: DEV_ROLES },
-            { target: "#narrativePanelTarget", title: "5. Total Summary of Evaluated Responses", body: "This interactive overview card synthesizes all evaluated responses into an executive summary and shows both 3-class and binary shares. <strong>Click anywhere on this card</strong> to open the full breakdown tables by Program, Aspect, and Semester (plus the Developer single-sentence test sandbox)!" },
+            { target: "#narrativePanelTarget", title: "5. Total Summary of Evaluated Responses", body: "This interactive overview card synthesizes all evaluated responses into an executive summary and shows both 3-class and binary shares. <strong>Click anywhere on this card</strong> to open the full breakdown tables by Program, Aspect, and Semester, a toggleable Custom Summary Builder, and the Developer single-sentence test sandbox!" },
+            { target: "#customSummaryBox", before: () => tourOpenBuilder(), delay: 220, title: "Custom Summary Builder", body: "Inside the full summary, open <strong>🎛️ Custom Summary Builder</strong> to choose exactly which data to summarize. Tick any <strong>Program, Academic Year, Semester, Sentiment, Data Source, or Aspect</strong> (leave a group empty to include everything), choose which tables to show, then press <strong>Generate Custom Summary</strong>. It stays collapsed until you need it." },
             { target: "#scorecardPanelTarget", title: "6. Polarity & Aspect Visualizations", body: "The doughnut chart displays overall sentiment proportions, while the stacked bar chart disaggregates feedback across <strong>Pedagogy</strong> (Teaching Style), <strong>Demeanor</strong> (Attitude), and <strong>Facilities</strong>." },
             { target: "#keywordCloudTarget", title: "7. Recurring Lexicon Cloud", body: "Highlights the most frequent words in student comments. <strong>Click any word chip</strong> to filter the feedback logs below." },
             { target: "#logsPanelTarget", title: "8. Explainable Logs ('Why Positive / Why Negative')", body: "Every feedback row automatically highlights <strong>positive words in green</strong>, <strong>negative words in red</strong>, and <strong>sarcasm flips ('eme/charot') in violet</strong>, with a <strong>💡 Why Positive / Why Negative</strong> reason banner underneath. Click any row for full word weights or to verify/override its label." },
             { target: "#evalNavBtn", title: "9. Confusion Matrix & F1-Score Validation", body: "Click <strong>📊 AI Evaluation (F1)</strong> to inspect the 3×3 Confusion Matrix, Macro Precision, Recall, and F1-Score, or seed the 30-item Taglish Gold Benchmark.", roles: DEV_ROLES },
             { target: "#navActionsTarget", title: "10. CSV Batch Upload & Layout Template", body: "Click <strong>📥 Upload CSV & Template</strong> to download the ready-made 4-column CSV layout template (<code>Program, Academic_Year, Semester, Feedback</code>) or upload batch datasets with smart fallback defaults." },
+            { target: "#studentPortalNavBtn", title: "Switch to the Student Portal", body: "Click <strong>🏛️ Student Portal</strong> to see the student side (Town Hall and Formal Surveys). To come back here, use <strong>📊 Analytics Dashboard</strong> in the portal's left menu." },
+            { target: ".nav-userchip", title: "Your Account", body: "Shows who is signed in: your initial, username, and role. Long usernames are shortened, so hover to see the full name. Next to it are the ☀️ light/dark switch and <strong>Sign Out</strong>." },
             { title: "You're Ready to Present!", body: "You can replay this interactive guide anytime by clicking <strong>❓ Tour</strong> in the top bar or <strong>❓ Interactive Guide</strong> in the left sidebar." }
         ];
+        function tourCloseSummary() {
+            const m = document.getElementById('totalSummaryModal');
+            const box = document.getElementById('customSummaryBox');
+            if (box) box.open = false;
+            if (m && m.classList.contains('modal-open')) closeTotalSummaryModal();
+        }
+        async function tourOpenBuilder() {
+            try { openTotalSummaryModal(); } catch (e) { openModal('totalSummaryModal'); }
+            const box = document.getElementById('customSummaryBox');
+            if (box) box.open = true;
+            await new Promise(r => setTimeout(r, 320));
+            if (box) {   // the summary window is fixed on screen, so bring the builder into view inside it
+                const tall = box.getBoundingClientRect().height > window.innerHeight * 0.7;
+                try { box.scrollIntoView({ block: tall ? 'start' : 'center', behavior: 'auto' }); } catch (e) { /* ignore */ }
+                await new Promise(r => setTimeout(r, 120));
+            }
+        }
+        let tourStepNo = 0;
+        const TOUR_STEPS = TOUR_ALL_STEPS
+            .filter(st => (!st.roles || st.roles.includes(userRole)) && !(st.notRoles && st.notRoles.includes(userRole)))
+            .map(st => {
+                const s = Object.assign({}, st);
+                if (s.target) { tourStepNo++; s.title = tourStepNo + '. ' + String(s.title).replace(/^\d+\.\s*/, ''); }
+                if (!s.before) s.before = tourCloseSummary;   // the summary window only stays open on the builder step
+                return s;
+            });
         CCCTour.configure({
-            steps: TOUR_ALL_STEPS.filter(st => (!st.roles || st.roles.includes(userRole)) && !(st.notRoles && st.notRoles.includes(userRole))),
+            steps: TOUR_STEPS,
+            onEnd: tourCloseSummary,
             seen: {{ tour_seen | tojson }},
             appName: 'the LexiMetrix Analytics Dashboard',
             userName: {{ username | tojson | safe }},
