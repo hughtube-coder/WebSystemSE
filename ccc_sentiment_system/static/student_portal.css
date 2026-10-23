@@ -698,3 +698,12 @@ button, a, select, .btn-nav, .btn-action, .survey-subtab-btn, .mf-chip, .sv-act,
     .pulse-stat-value, .pulse-stat-card .value { font-size: 1.5rem; }
     .welcome-card .btn-action { width: 100%; }
 }
+/* ===== PAGINATED POST COMMENTS BAR ===== */
+.ct-pagination-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--border-subtle); font-size: 0.74rem; color: var(--text-muted); }
+.ct-page-info { font-weight: 600; }
+.ct-page-controls { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ct-page-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle); color: var(--text-body); border-radius: 7px; padding: 4px 9px; font-size: 0.74rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
+.ct-page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--text-heading); background: rgba(59, 130, 246, 0.14); }
+.ct-page-btn.active { background: var(--primary-gradient); color: #ffffff; border-color: transparent; box-shadow: 0 2px 8px var(--primary-glow); }
+.ct-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+[data-theme="light"] .ct-page-btn { background: rgba(15, 23, 42, 0.04); }
