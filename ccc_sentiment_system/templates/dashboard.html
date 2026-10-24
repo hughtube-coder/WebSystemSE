@@ -1445,6 +1445,7 @@
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => openLexiconModal())">🛠️ Taglish Lexicon Studio</button>
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => openModelEvalModal())">🎯 AI F1 &amp; Confusion Matrix</button>
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => openAddYearModal())">📅 Add Academic Year</button>
+            <button type="button" class="lx-side-btn" onclick="clearDemoDataPrompt(this)" style="color:#fb7185;">🧹 Clear All Test Posts &amp; Logs</button>
             {% endif %}
 
             <div class="lx-side-section">Portals &amp; Preferences</div>
@@ -2067,6 +2068,34 @@
             if (screen) { screen.classList.remove('show', 'visible', 'slow'); screen.style.display = ''; }
             window._loggingOut = false;
         });
+
+        async function clearDemoDataPrompt(btn) {
+            if (!isDev) return;
+            if (btn.dataset.armed !== '1') {
+                btn.dataset.armed = '1';
+                const orig = btn.innerHTML;
+                btn.innerHTML = '⚠️ Click Again to Wipe Posts & Logs';
+                setTimeout(() => { btn.dataset.armed = ''; btn.innerHTML = orig; }, 4500);
+                return;
+            }
+            btn.dataset.armed = '';
+            closeLxSidebar();
+            showLoader("Clearing all test posts, comments, and feedback logs...");
+            try {
+                const res = await apiFetch('/api/admin/clear_demo_data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                    body: JSON.stringify({ scope: 'all', delete_surveys: false })
+                });
+                const data = await readJson(res, "Could not clear demo data.");
+                showToast(data.message || "All test posts and feedback logs cleared!", "success");
+                fetchAnalytics();
+            } catch (e) {
+                showToast(e.userMessage || "Failed to clear test data.", "error");
+            } finally {
+                hideLoader();
+            }
+        }
 
         function openAddYearModal() {
             if (!isDev) return;
