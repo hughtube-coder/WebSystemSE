@@ -3716,6 +3716,44 @@ def export_csv():
 
     return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": f"attachment;filename=dci_sentiment_export.csv"})
 
+
+@app.route('/api/admin/clear_demo_data', methods=['POST'])
+@login_required
+@api_guard
+def clear_demo_data():
+    if not _is_dev():
+        return jsonify({"error": "Only Developer administrators can reset demonstration data."}), 403
+
+    data = json_body()
+    scope = sfield(data, "scope", "all", max_len=30).lower()
+
+    if scope == "testing_only":
+        # Removes only sandbox & 30-item benchmark rows
+        deleted_fb = Feedback.query.filter_by(source="Testing").delete(synchronize_session=False)
+        db.session.commit()
+        _chart_cache.clear()
+        return jsonify({"success": True, "message": f"Cleared {deleted_fb} testing/benchmark record(s)."})
+
+    # Default ('all'): Wipes Town Hall posts, comments, votes, feedback logs, CSV batches, and survey responses
+    CommunityComment.query.delete(synchronize_session=False)
+    CommunityPostVote.query.delete(synchronize_session=False)
+    CommunityResolutionVote.query.delete(synchronize_session=False)
+    deleted_posts = CommunityPost.query.delete(synchronize_session=False)
+    deleted_fb = Feedback.query.delete(synchronize_session=False)
+    ImportBatch.query.delete(synchronize_session=False)
+    FormAnonymousSubmission.query.delete(synchronize_session=False)
+    FormResponseRecord.query.delete(synchronize_session=False)
+
+    if data.get("delete_surveys") is True:
+        EvaluationForm.query.delete(synchronize_session=False)
+
+    db.session.commit()
+    _chart_cache.clear()
+    return jsonify({
+        "success": True,
+        "message": f"Cleared {deleted_posts} Town Hall post(s), {deleted_fb} feedback log(s), and all survey submissions."
+    })
+
 @app.route('/api/lexicon', methods=['GET', 'POST', 'DELETE'])
 @login_required
 @api_guard
