@@ -1437,6 +1437,20 @@ function surveyCardHTML(f, st) {
     if (st.key === 'done') cta = `<div class="sv-note sv-note-done">✓ You've submitted this evaluation</div>`;
     else if (st.key === 'closed') cta = `<div class="sv-note sv-note-closed">Closed · ${esc(f.close_reason || 'No longer accepting responses')}</div>`;
     else cta = `<button type="button" class="btn-action sv-cta" onclick="openFillModal(${f.id})">Fill Out Evaluation <span aria-hidden="true">→</span></button>`;
+
+    const canManage = Boolean(
+        f.can_manage ||
+        (window.APP_USERNAME && f.created_by_name === window.APP_USERNAME) ||
+        ['developer', 'misd', 'admin'].includes(roleLower)
+    );
+    const manageBar = canManage ? `
+        <div class="sv-actions" style="margin-top: 8px;">
+            <button type="button" class="sv-act" onclick="openSurveyAnalytics(${f.id})" title="View survey results">📊 Results</button>
+            <button type="button" class="sv-act" onclick="openEditSurvey(${f.id})" title="Edit this survey">✏️ Edit</button>
+            <button type="button" class="sv-act" onclick="copySurveyLink(${f.id})" title="Copy shareable link">🔗 Link</button>
+            <button type="button" class="sv-act sv-act-danger" onclick="openDeleteSurvey(${f.id})" title="Delete this survey">🗑️ Delete</button>
+        </div>` : '';
+
     return `
         <div class="sv-body">
             ${surveyBannerHTML(f)}
@@ -1455,6 +1469,7 @@ function surveyCardHTML(f, st) {
                 ${surveyQuotaBarHTML(f.total_submissions, f.max_responses)}
             </ul>
             ${cta}
+            ${manageBar}
         </div>`;
 }
 
@@ -1476,6 +1491,8 @@ function _setSurveyModalMode(isEdit, locked, responseCount) {
     if (toolbar) toolbar.style.display = questionsLocked ? 'none' : 'flex';
     const qc = document.getElementById('questionsBuilderContainer');
     if (qc) qc.classList.toggle('questions-locked', questionsLocked);
+    const delBtn = document.getElementById('surveyDeleteFromEditBtn');
+    if (delBtn) delBtn.style.display = isEdit ? 'inline-flex' : 'none';
 }
 
 async function openEditSurvey(id) {
@@ -1506,8 +1523,12 @@ async function openEditSurvey(id) {
     } finally { hideLoader(); }
 }
 
+function _findFormById(id) {
+    return (myFormsCache || []).find(x => x.id === id) || (allFormsCache || []).find(x => x.id === id);
+}
+
 async function copySurveyLink(id) {
-    const f = myFormsCache.find(x => x.id === id);
+    const f = _findFormById(id);
     if (!f || !f.share_url) return showToast("This survey has no share link yet. Please refresh and try again.", 'error');
     const url = location.origin + f.share_url;
     let copied = false;
@@ -1526,13 +1547,21 @@ async function copySurveyLink(id) {
 
 let deletingFormId = null;
 function openDeleteSurvey(id) {
-    const f = myFormsCache.find(x => x.id === id);
+    const f = _findFormById(id);
     if (!f) return;
     deletingFormId = id;
     document.getElementById('deleteSurveyName').textContent = f.title;
-    document.getElementById('deleteSurveyCount').textContent = f.response_count;
+    const countVal = (f.response_count !== undefined) ? f.response_count : (f.total_submissions || 0);
+    document.getElementById('deleteSurveyCount').textContent = countVal;
     document.getElementById('deleteSurveyPurge').checked = false;
     openModal('deleteSurveyModal');
+}
+
+function openDeleteSurveyFromEdit() {
+    if (!editingFormId) return;
+    const targetId = editingFormId;
+    closeCreateFormModal();
+    setTimeout(() => openDeleteSurvey(targetId), 180);
 }
 function closeDeleteSurvey() { deletingFormId = null; closeModal('deleteSurveyModal'); }
 async function confirmDeleteSurvey() {
