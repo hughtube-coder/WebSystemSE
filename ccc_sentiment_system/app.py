@@ -2063,7 +2063,33 @@ def handle_post_comments(post_id):
         return jsonify({"success": True})
 
     comments = CommunityComment.query.filter_by(post_id=post.id).order_by(CommunityComment.created_at.asc()).all()
-    return jsonify([{"id": c.id, "author_department": c.author_department, "content": safe_out(c.content), "created_at": c.created_at.strftime("%b %d, %Y • %I:%M %p")} for c in comments])
+    is_dev_user = _is_dev()
+    return jsonify([{
+        "id": c.id,
+        "author_department": c.author_department,
+        "content": "This comment has been deleted" if c.content == "This comment has been deleted" else safe_out(c.content),
+        "is_deleted": (c.content == "This comment has been deleted"),
+        "can_delete": bool(is_dev_user and c.content != "This comment has been deleted"),
+        "created_at": c.created_at.strftime("%b %d, %Y • %I:%M %p")
+    } for c in comments])
+
+@app.route('/api/community_comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+@api_guard
+def delete_community_comment(comment_id):
+    if not _is_dev():
+        return jsonify({"error": "Only Developer administrators can delete comments."}), 403
+    comment = db.session.get(CommunityComment, comment_id)
+    if not comment:
+        return jsonify({"error": "Comment not found."}), 404
+    comment.content = "This comment has been deleted"
+    db.session.commit()
+    return jsonify({
+        "success": True,
+        "id": comment.id,
+        "post_id": comment.post_id,
+        "content": "This comment has been deleted"
+    })
 
 POST_STATUSES = {"Open", "Under Review", "Action Taken"}
 
