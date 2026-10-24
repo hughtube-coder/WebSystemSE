@@ -1,261 +1,149 @@
-# WebSystemSE
+# LexiMetrix: Team Guide (Plain-Language Version)
 
-================================================================================
-LEXIMETRIX: MULTILINGUAL NLP FEEDBACK EVALUATION ENGINE
-COMPREHENSIVE THESIS TEAM GUIDE, SYSTEM FLOW & TECHNICAL DOCUMENTATION
-================================================================================
+LexiMetrix is a website that reads what students write about their classes and tells us, in numbers and charts, whether the feedback is **positive**, **negative**, or **neutral**, and *what it is about*. It understands English, Tagalog, and Taglish (a mix of both).
 
-1. EXECUTIVE SUMMARY
---------------------------------------------------------------------------------
-LexiMetrix is a web-based Multilingual Natural Language Processing (NLP) and
-Aspect-Based Sentiment Analysis (ABSA) platform designed to evaluate bilingual
-(English, Tagalog, and Taglish) student feedback within the Department of
-Computing and Informatics (DCI), covering BSCS and BSIT programs.
+It was built for the **Department of Computing and Informatics (DCI)** at City College of Calamba, covering **BSCS** and **BSIT** students.
 
-Traditional student evaluations rely heavily on numerical Likert ratings while
-leaving hundreds of open-ended narrative comments unanalyzed due to manual
-reading bottlenecks and the linguistic complexity of code-switched Taglish
-(such as prefixation, intensifiers, negations, and slang sarcasm like "eme" or
-"charot"). LexiMetrix solves this by combining a transformer-based model
-(cardiffnlp/twitter-xlm-roberta-base-sentiment) with a custom rule-based
-Taglish lexical-morphological engine.
+---
 
-The system features two interconnected workspaces:
-  1. Student Feedback & Community Portal (/student-portal): A participatory
-     Town Hall forum and Formal Survey hub where students submit 100% anonymous
-     evaluations, preview AI sentiment before posting, vote on peer concerns,
-     and track official leadership resolutions.
-  2. Quantitative Analytics & Oversight Dashboard (/dashboard): An executive
-     command center that converts raw narratives into real-time KPIs, aspect
-     bar charts, polarity doughnut charts, explainable word-weight logs ("Why
-     Positive / Why Negative"), automated prescriptive alerts, batch CSV
-     ingestion, and a 3x3 Confusion Matrix / F1-Score validation suite.
+## 1. Why we built it
 
+Regular evaluation forms mostly ask students to pick a number from 1 to 5. The written comments are left unread because there are too many, and Taglish is hard for normal tools: "sobrang galing" means *very good*, and "galing mo, charot!" is actually sarcasm.
 
-================================================================================
-2. END-TO-END SYSTEM FLOW (HOW THE SYSTEM WORKS)
-================================================================================
+LexiMetrix reads those comments for us and organizes them, so teachers and student leaders can see what students really think.
 
-STEP 1: INSTITUTIONAL REGISTRATION & OTP AUTHENTICATION
-  - Users register at /signup using an official institutional email address
-    (@ccc.edu.ph), selecting their role (Student - Regular, Student - Officer,
-    or Faculty) and degree program(s) (BSCS, BSIT).
-  - Users must accept the RA 10173 Data Privacy Consent Notice before account
-    creation.
-  - The system generates a cryptographically secure 6-digit One-Time Passcode
-    (OTP), hashes it using HMAC-SHA256 with the server secret key (10-minute
-    expiry, max 5 attempts), and dispatches it via the Brevo HTTPS API.
-  - Pre-seeded Developer accounts (hjraymundo, apmalacaman, msmorata) are
-    provisioned automatically at startup using scrypt password hashes.
+---
 
-STEP 2: ROLE-BASED ROUTING & SESSION SECURITY
-  - Upon login (/login), brute-force protection enforces a 10-minute lockout
-    after 5 consecutive failed password attempts.
-  - Successful logins are recorded in the audit table (user_login_logs) and
-    routed based on role clearance:
-      * Student - Regular & Student - Officer -> /student-portal
-      * Faculty & Developer                   -> /dashboard (with seamless
-        navigation to /student-portal and back via the floating dashboard pill)
-  - Strict browser cache lockouts (no-store, no-cache, Clear-Site-Data on
-    sign-out, and Back-Forward Cache ping guards) prevent unauthorized session
-    restoration on shared laboratory PCs.
+## 2. The two sides of the website
 
-STEP 3: FEEDBACK INGESTION (3 DATA SOURCES)
-  LexiMetrix ingests student narratives from three distinct sources:
-  1. Portal Submissions (source="Portal"):
-     - Town Hall Posts: Open community feedback posted to Campus-Wide or DCI
-       channels. Students can toggle "Preview AI Analysis" (/api/inspect_preview)
-       to inspect how the AI scores their text before publishing.
-     - Formal Surveys: Structured evaluations created by Officers, Faculty, or
-       Developers containing Likert (1-5) scales (with conditional follow-up
-       elaboration boxes on low ratings), single-choice radio buttons,
-       checkboxes, and open narrative prompts.
-  2. Batch CSV Imports (source="CSV"):
-     - Developers upload historical or external evaluation spreadsheets (.csv).
-     - The importer auto-detects encoding (UTF-8 / CP1252), maps columns
-       (Program, Academic_Year, Semester, Feedback) with smart fallback
-       defaults, deduplicates rows, processes records in 40-row chunks, and
-       supports 1-click batch rollback (/api/import/<batch_id>/rollback).
-  3. Benchmark & Diagnostic Testing (source="Testing"):
-     - Developers can run single-sentence diagnostic tests or seed the 30-item
-       Taglish Gold Benchmark suite for model validation.
+| | Student Portal | Analytics Dashboard |
+|---|---|---|
+| **Who uses it** | Students (and staff, to view it) | Faculty and Developers |
+| **What it is for** | Sharing feedback, voting, answering surveys | Seeing the results as numbers and charts |
+| **Web address** | `/student-portal` | `/dashboard` |
 
-STEP 4: PRIVACY SCRUBBING & PROFANITY MASKING
-  - Anonymity Decoupling: Survey submissions store completion flags in
-    form_response_records (to enforce 1-response-per-student) while storing
-    actual answers separately in form_anonymous_submissions with timestamps
-    rounded to the hour/day to prevent timing-correlation attacks.
-  - Automated PII Scrubbing (scrub_pii): Regex filters automatically mask
-    emails ([email hidden]), Philippine mobile numbers ([number hidden]),
-    student IDs ([ID hidden]), social handles ([handle hidden]), and
-    self-introductions ("My name is...", "Ako po si..." -> [self-introduction
-    hidden]).
-  - Profanity Handling (mask_profanity): Leet-speak-aware regex detects English,
-    Tagalog, and Cebuano profanity. The AI reads the raw profanity first as a
-    1.5x emotional intensifier, then permanently masks the stored/displayed
-    word (e.g., "p*******a") and flags has_profanity=True.
+### Student Portal: what students can do
+- **Town Hall:** a community feed where students post concerns or praise, comment, and upvote/downvote each other's posts. Before posting, a student can press **Preview AI Analysis** to see how the AI would score their message.
+- **Formal Surveys:** forms made by officers, faculty, or developers (like a mini Google Forms), with 1-5 ratings, multiple choice, checkboxes, and open answers.
+- **Concern tracking:** officers and faculty can mark a concern as **Under Review** or **Action Taken**, with a note that students can react to.
+- **Community Pulse:** a live counter showing how many students have spoken up, how many posts are praise vs. complaints, and how many surveys are open.
 
-STEP 5: HYBRID NLP & ASPECT-BASED SENTIMENT ANALYSIS (ABSA) PIPELINE
-  Every narrative comment passes through run_absa_pipeline():
-  1. Preprocessing: Lowercases text, strips URLs and special symbols, and
-     normalizes whitespace (up to 2,000 characters).
-  2. Compound Clause Segmentation: Splits multi-thought sentences at punctuation
-     and bilingual contrastive conjunctions ("but", "pero", "kaso", "kaso lang",
-     "however", "although", "while", "yet") into up to 12 distinct clauses.
-  3. Aspect Categorization: Maps each clause via keyword boundaries to one of
-     four institutional dimensions:
-       * Instructional Delivery & Pedagogy (lecture, turo, explain, pacing, quiz)
-       * Faculty Demeanor & Approachability (mabait, approachable, sungit, prof)
-       * Campus Facilities & Infrastructure (room, aircon, mainit, wifi, lab, pc)
-       * General Academic Feedback (fallback category)
-  4. Hybrid Clause Scoring (evaluate_clause):
-     - Transformer Baseline: Queries cardiffnlp/twitter-xlm-roberta-base-sentiment.
-     - Morphological Stemming: Strips Tagalog affixes (napaka-, pinaka-, nakaka-,
-       nag-, mag-, ma-, -ng, -an, -han, -in) and English suffixes (-ing, -ed, -ly).
-     - Lexical Token Scoring:
-         * Positive match: +1.0 base score
-         * Negative match: -1.0 base score
-         * Intensifier ("sobrang", "napaka", "very", "super"): Sets a 1.5x
-           multiplier on the next sentiment token.
-         * Negator ("hindi", "di", "wala", "walang", "not", "never", "dont"):
-           Inverts a following Positive token to negative (-1.0 or -1.5) and
-           softens an inverted Negative token (+0.5).
-         * Deprivation Rule: Existential negators ("walang wifi", "no aircon")
-           without a following adjective resolve to -1.0 * intensifier.
-         * Sarcasm Invalidator: Slang irony markers ("eme", "charot", "charing",
-           "joke") immediately override clause and overall polarity to Negative
-           (-1.5 lexical impact, >= 92% confidence).
-  5. Document-Level Aggregation & Explainability:
-     - Computes overall polarity by majority clause vote (breaking ties via net
-       lexical score sum) and averages clause confidence scores.
-     - Generates a human-readable "Why Positive / Why Negative / Why Neutral"
-       explanation citing the exact trigger words, scores, and aspect category.
+### Analytics Dashboard: what staff can see
+- **Totals and charts:** how many responses are positive, negative, and neutral, plus bar and doughnut charts per topic.
+- **Total Summary card:** click it for a full breakdown by program, topic, and school term. Inside is the **Custom Summary Builder** (a hidden panel) where you tick exactly what you want summarized, such as only BSIT, only 1st semester, or only complaints about facilities.
+- **Feedback table with explanations:** every comment shows *why* it was marked positive or negative. Good words are green, bad words red, "very"-type words amber, and "not"/sarcasm words purple.
+- **Keyword cloud:** the most-repeated words. Click one to filter the table.
+- **Alerts:** if one topic gets many complaints, the system suggests an action (see section 5).
+- **Developer tools:** upload old results from a CSV file, edit the Taglish word list, and check how accurate the AI is.
 
-STEP 6: QUANTITATIVE SYNTHESIS, PRESCRIPTIVE ALERTS & VALIDATION
-  - Dashboard KPIs & Charts: Computes total, positive, negative, and neutral
-    counts, 3-class vs. binary (Pos vs. Neg Only) percentages, and renders
-    high-DPI Matplotlib doughnut and aspect bar charts.
-  - Prescriptive Action Alerts: If any aspect accumulates >= 3 mentions with a
-    Negative ratio >= 40%, the system triggers a targeted alert:
-      * Facilities >= 40% Neg  -> "Community Action Alert" (General Services)
-      * Pedagogy >= 40% Neg    -> "Pedagogical Dialogue Request" (Syllabus Pacing)
-      * Demeanor >= 40% Neg    -> "Student Welfare Advisory" (Faculty Rapport)
-  - Ground-Truth Override & Confusion Matrix: Developers can confirm or override
-    any record's AI sentiment, feeding the live 3x3 Confusion Matrix, Precision,
-    Recall, Macro-F1, and Weighted-F1 evaluation modal.
+> **Moving between the two:** from the dashboard, click **Student Portal** in the top bar. From the portal, use **Analytics Dashboard** in the left menu to go back (only staff can see this link).
 
+---
 
-================================================================================
-3. COMPLETE FEATURE SUITE BY MODULE
-================================================================================
+## 3. Who can do what
 
-A. ANALYTICS & OVERSIGHT DASHBOARD (/dashboard)
-  - Toggleable Quick Workspace Sidebar (Alt + S): Slide-over navigation drawer
-    with Pin/Unpin support so the main workspace stays 100% uncluttered.
-  - Data Source Integrity Tabs: Switch between All Evaluated Sources, Portal
-    Submissions, Imported CSVs, and Benchmark & Testing Logs.
-  - Program & Polarity Filters: Filter by All Programs, BSCS, or BSIT (Faculty
-    are automatically scoped to their assigned program), filter by sentiment,
-    or toggle "Pos vs. Neg Only" (Actionable Binary Mode).
-  - Total Summary of Evaluated Responses Card: Synthesizes an executive
-    narrative paragraph and opens a full modal with breakdowns by Program,
-    Aspect, Academic Term, plus an interactive Custom Summary Builder.
-  - Explainable Feedback Logs Table: Highlights positive words in green,
-    negative words in red, intensifiers in amber, and negators/sarcasm in
-    violet right inside the sentence, paired with a "Why Positive / Negative"
-    banner and a click-to-open AI Sentiment Inspector modal.
-  - Recurring Lexicon Keyword Cloud: Extracts top bilingual vocabulary; clicking
-    any word chip filters the feedback table immediately.
-  - Dynamic Taglish Slang Manager: Allows Developers to add or delete positive,
-    negative, intensifier, negation, or profanity terms live without redeployment.
-  - AI Evaluation (F1 & Confusion Matrix) Modal: Computes live multi-class
-    Accuracy, Macro Precision, Macro Recall, Macro F1, and Weighted F1 on
-    Human-Verified records or the 30-item Taglish Gold Benchmark.
+| Role | Where they land after login | Main abilities |
+|---|---|---|
+| **Student - Regular** | Student Portal | Post, comment, vote, answer surveys |
+| **Student - Officer** | Student Portal | Everything above, plus make surveys and mark concerns as Under Review / Action Taken |
+| **Faculty** | Dashboard | See results for their program, make surveys |
+| **Developer** (thesis team) | Dashboard | Everything, including CSV uploads, word-list edits, fixing AI labels, and moderating comments |
 
-B. STUDENT FEEDBACK & COMMUNITY PORTAL (/student-portal)
-  - Department Community Pulse: Live voice tally bar showing total voices,
-    commendation %, grievance %, and active survey count.
-  - Participatory Town Hall Feed: Supports Campus-Wide, Official Announcements,
-    and DCI channels, image attachments (drag-and-drop or URL), reference links,
-    upvote/downvote consensus scoring, and pre-flight AI Sentiment Preview.
-  - Paginated Discussion Comments: Each post features a collapsible comment
-    thread paginated at 5 comments per page (with Prev/Next and page numbers).
-    Developers can moderate inappropriate comments, replacing them with
-    "This comment has been deleted".
-  - Duty-Bearer Resolution Tracking: Officers, Faculty, and Developers can mark
-    student concerns as "Under Review" or "Action Taken" with an official note
-    that students can react to (thumbs up/down).
-  - Google-Forms-Style Survey Builder & Manager: Multi-question builder
-    supporting Open Text, Likert (1-5) with conditional follow-up logic,
-    Single Choice, and Checkboxes; custom theme colors, fonts, and header
-    banners; cutoff deadlines, response quotas, shareable links (/s/<token>),
-    and private per-survey analytics with CSV export.
+---
 
+## 4. How a comment travels through the system
 
-================================================================================
-4. ESSENTIAL INFORMATION FOR WRITING THE THESIS PAPER
-================================================================================
+1. **Sign up and verify.** Users sign up with their school email (`@ccc.edu.ph`), agree to the Data Privacy notice (RA 10173), and type in a **6-digit code** sent to their email. The code expires in 10 minutes and allows 5 tries.
+2. **Log in safely.** Five wrong passwords in a row locks the account for 10 minutes. Signing out clears the page so the next person on a shared lab PC can't press "Back" to see it.
+3. **Feedback comes in** from three places:
+   - **Portal:** Town Hall posts and survey answers.
+   - **CSV upload:** older or outside spreadsheets uploaded by developers. A wrong upload can be undone with one click.
+   - **Testing:** sample sentences used to test the AI.
+4. **Privacy cleanup.** Before anything is saved or shown, the system hides emails, phone numbers, student ID numbers, social media handles, and "my name is..." sentences. Bad words are replaced with stars (like `p*******a`), though the AI still notices them to judge how strong the emotion is.
+5. **The AI reads it.** The comment is split into smaller ideas (for example, "Mabait si Sir **pero** mabilis magturo" becomes two ideas). Each idea is sorted into a topic and scored (see next section).
+6. **Results appear** on the dashboard as charts, tables, and alerts.
 
-A. MATHEMATICAL FORMULAS (FOR CHAPTER 3: METHODOLOGY)
-  1. Effective Lexical Token Score (w_i):
-       w_i = b_i * I_i * N_i
-     Where:
-       - b_i in {+1.0, -1.0, 0.0} is the base polarity of token i.
-       - I_i = 1.5 if preceded by an intensifier token, else 1.0.
-       - N_i = -1.0 if preceded by a negator before a positive token (or -0.5
-         when softening a negative token), else 1.0.
+---
 
-  2. Clause Net Lexical Score (L_c):
-       L_c = sum(w_i for i in clause) - (1.5 if sarcasm_detected else 0)
+## 5. How the AI decides (without the math)
 
-  3. Multi-Class Evaluation Metrics (for class c in {Positive, Neutral, Negative}):
-       Accuracy        = (TP_pos + TP_neu + TP_neg) / N_total
-       Precision_c     = TP_c / (TP_c + FP_c)
-       Recall_c        = TP_c / (TP_c + FN_c)
-       F1_c            = (2 * Precision_c * Recall_c) / (Precision_c + Recall_c)
-       Macro_F1        = (F1_Pos + F1_Neu + F1_Neg) / 3
-       Weighted_F1     = sum(Support_c * F1_c) / N_total
+The system uses **two helpers working together**:
 
-  4. Actionable Binary Share (Excluding Neutral Remarks):
-       Binary_Pos_%    = (N_Pos / (N_Pos + N_Neg)) * 100
-       Binary_Neg_%    = (N_Neg / (N_Pos + N_Neg)) * 100
+1. **A trained language model** (XLM-RoBERTa) that has read huge amounts of text in many languages and gives a first guess.
+2. **Our own Taglish rulebook** that fixes what the model tends to miss.
 
-B. DATABASE SCHEMA / ENTITY-RELATIONSHIP SUMMARY (14 TABLES)
-  1. users                      : Institutional accounts, roles, scrypt/pbkdf2 hashes, OTP state, lockout timers, RA 10173 consent timestamp.
-  2. user_login_logs            : Security audit trail (user_id, role, IP, user_agent, login_time).
-  3. academic_years             : Registered school year cycles (e.g., 2024-2025, 2025-2026, 2026-2027).
-  4. system_settings            : Key-value store for active_academic_year and active_semester.
-  5. evaluation_forms           : Formal survey definitions, targeting (program/section/subject), quotas, deadlines, questions_json, theme_json, share_token.
-  6. form_response_records      : Tracks which student_id completed which form_id (prevents duplicate submissions while keeping answers anonymous).
-  7. form_anonymous_submissions : Decoupled JSON survey responses (answers_json) with zero foreign key to users.
-  8. feedback_records           : Core ABSA table storing raw_text, cleaned_text, sentiment, ai_sentiment, human_sentiment, confidence, aspect_breakdown JSON, source, import_batch, has_profanity.
-  9. import_batches             : Tracks CSV uploads (filename, SHA-256 hash, row counts, status) for 1-click rollback.
-  10. community_posts           : Town Hall posts & pinned announcements, category, sentiment, score, resolution status, action_note.
-  11. community_post_votes      : Upvote (+1) / Downvote (-1) records per user per post.
-  12. community_resolution_votes: Student approval/disapproval reactions on official resolution notes.
-  13. community_comments        : Anonymous discussion replies on Town Hall posts.
-  14. lexicon_terms             : Dynamic Taglish dictionary words categorized as positive, negative, intensifiers, negations, or profanity.
+**Topics the AI sorts each comment into:**
+- **Teaching style** (lessons, explaining, speed, quizzes)
+- **Teacher attitude** (kind, approachable, strict)
+- **Campus facilities** (rooms, aircon, Wi-Fi, computers)
+- **General feedback** (anything else)
 
-C. DATA PRIVACY & SECURITY COMPLIANCE (RA 10173 / ISO 25010 SECURITY)
-  - Informed Consent: Explicit RA 10173 modal and checkbox required at sign-up.
-  - Identity Decoupling: Survey answers (form_anonymous_submissions) and
-    sentiment records (feedback_records) store no student user_id.
-  - k-Anonymity (Small-Group Suppression): When fewer than MIN_ANON_GROUP (default
-    5) responses match a filter or survey, detailed results and CSV exports are
-    automatically suppressed for non-Developer users so individual respondents
-    cannot be deduced.
-  - Automated PII & Profanity Scrubbing: Masks accidental self-identification
-    and offensive language before storage/display.
-  - Timestamp Coarsening: Survey feedback timestamps are rounded to the hour
-    and attendance records to the day.
+**What the rulebook looks for:**
+- **Good and bad words**, scored +1 or -1.
+- **"Very" words** like *sobrang*, *napaka*, and *super* make the next word stronger (about 1.5 times).
+- **"Not" words** like *hindi*, *wala*, and *not* flip the meaning ("hindi malinaw" = bad).
+- **"No such thing" phrases** such as *walang wifi* count as complaints.
+- **Sarcasm markers** like *eme*, *charot*, and *joke* turn the comment negative ("Ang galing mo magturo, eme lang!").
+- **Word endings and prefixes** in Tagalog are trimmed so *nakakainis* and *inis* are treated alike.
 
-D. PROJECT FILE STRUCTURE
-  - app.py                      : Main Flask application, SQLAlchemy models, Brevo OTP mailer, Hybrid XLM-RoBERTa + Taglish ABSA engine, Matplotlib chart generator, and REST APIs.
-  - templates/auth.html         : Sliding Sign-In / Sign-Up portal, RA 10173 modal, 6-digit OTP verification, and Password Recovery UI.
-  - templates/dashboard.html    : Quantitative Analytics Dashboard, Quick Workspace sidebar, Total Summary & Custom Summary Builder, AI Inspector, CSV Importer, Slang Manager, and F1 Confusion Matrix modal.
-  - templates/student_portal.html: Student Voice Collective, Community Pulse, Town Hall feed, Formal Surveys hub, Survey Builder, and Binary Code-to-Logo SVG morph.
-  - static/student_portal.js    : Frontend logic for Town Hall posts, AI preview, paginated comments, survey builder/renderer, theme customizer, and owner analytics.
-  - static/student_portal.css   : Responsive dark/light glassmorphism stylesheet for the Student Portal.
-  - static/tour.js & tour.css   : Interactive spotlight guided tour engine for both portals.
-  - static/leximetrix-logo.svg  : Animated binary-green (0101) code-to-logo SVG crest.
-================================================================================
+**Alerts:** when one topic gets **at least 3 mentions and 40% or more of them are negative**, the dashboard suggests an action:
+- Facilities: a **Community Action Alert** for General Services
+- Teaching style: a **Pedagogical Dialogue Request** about lesson pacing
+- Teacher attitude: a **Student Welfare Advisory** about teacher-student rapport
+
+**Fixing the AI:** developers can mark any comment's label as correct or wrong. These corrections feed the accuracy check (the confusion matrix and F1 score), which shows how often the AI agrees with human judgment.
+
+---
+
+## 6. Privacy and safety, in plain words
+
+- **Anonymous answers.** The system remembers *that* a student finished a survey (so they can't answer twice), but their answers are stored somewhere else with **no name attached**. Times are rounded to the hour or day so nobody can be matched by timing.
+- **Small-group hiding.** If fewer than **5** responses match a filter, non-developers see no details or CSV export, because with so few people someone could guess who wrote what.
+- **Automatic cleanup** of personal info and bad words (see step 4 above).
+- **Consent first.** Nobody can create an account without accepting the Data Privacy notice.
+- **Developer accounts** for the thesis team are created automatically when the site starts. Their passwords are stored scrambled, never as plain text. Don't share your password, and change it after your first login.
+
+---
+
+## 7. Files in the project (what each one does)
+
+| File | What it does |
+|---|---|
+| `app.py` | The brain of the site: database, email codes, the AI, charts, and all the behind-the-scenes functions |
+| `templates/auth.html` | Sign-in, sign-up, email code, and password recovery page |
+| `templates/dashboard.html` | The analytics dashboard |
+| `templates/student_portal.html` | The student portal (Town Hall and Surveys) |
+| `static/student_portal.js` | Makes the portal work (posting, comments, survey builder) |
+| `static/student_portal.css` | Colors and layout for the portal, dark and light |
+| `static/tour.js` and `tour.css` | The step-by-step "Tour" guide in both pages |
+| `static/leximetrix-logo.svg` | The animated logo |
+| `requirements.txt` | The list of tools the site needs to run |
+| `render.yaml` | Settings for our hosting on Render |
+
+---
+
+## 8. Good to know for the team
+
+- **Hosting:** the site runs on **Render's free plan**. If nobody visits for about 15 minutes, it goes to sleep and the next visit can take up to a minute to load. This is normal.
+- **Emails** (verification codes and password resets) are sent through **Brevo**. If a code doesn't arrive, check the spam folder.
+- **Never share or upload secrets** (passwords, API keys, the secret key file). They live in Render's settings, not in GitHub.
+- **Need a tour?** Press the **❓ Tour** button at the top of either page.
+- **Shortcut:** `Alt + S` opens the dashboard's quick menu.
+
+---
+
+## 9. Word list (glossary)
+
+| Term | Meaning |
+|---|---|
+| **NLP** | Teaching computers to understand human language |
+| **ABSA** | Aspect-Based Sentiment Analysis: working out the feeling *and* the topic it is about |
+| **Sentiment** | Whether a comment is positive, negative, or neutral |
+| **Taglish** | Mixed Tagalog and English |
+| **OTP** | One-Time Passcode, the 6-digit email code |
+| **CSV** | A simple spreadsheet file |
+| **Likert scale** | A 1-5 rating where 1 is strongly disagree and 5 is strongly agree |
+| **PII** | Personal info such as names, numbers, or emails |
+| **RA 10173** | The Philippine Data Privacy Act |
+| **Confusion matrix / F1** | Ways to measure how often the AI agrees with human labels |
+| **Hash** | A scrambled version of a password or code that can't be turned back into the original |
