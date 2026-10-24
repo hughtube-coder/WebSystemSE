@@ -2123,15 +2123,20 @@ def get_forms_api():
         is_expired = f.deadline_date and f.deadline_date not in ["No Expiry", "None", ""] and (f.deadline_date < now_iso if "T" in f.deadline_date else f.deadline_date < now_iso[:10])
         is_quota_full = bool(f.max_responses and f.max_responses > 0 and total >= f.max_responses)
 
+        can_manage = bool(f.created_by_id == current_user.id or _is_dev())
         out.append({
             "id": f.id, "title": f.title, "description": f.description, "form_category": f.form_category,
             "department": f.department, "program": f.program, "subject_code": f.subject_code or "N/A",
             "section_target": f.section_target or "ALL", "deadline_date": f.deadline_date or "No Expiry",
-            "max_responses": f.max_responses or 0, "total_submissions": total,
+            "max_responses": f.max_responses or 0, "total_submissions": total, "response_count": total,
             "is_closed": is_expired or is_quota_full,
             "close_reason": "Deadline Passed" if is_expired else ("Quota Reached" if is_quota_full else None),
             "academic_year": f.academic_year, "semester": f.semester,
+            "created_by_id": f.created_by_id,
             "created_by_name": f.created_by_name, "created_by_role": f.created_by_role,
+            "can_manage": can_manage,
+            "is_owner": bool(f.created_by_id == current_user.id),
+            "share_url": ("/s/" + _form_share_token(f)) if can_manage else None,
             "questions": q_list, "already_submitted": (f.id in submitted),
             "created_at": f.created_at.strftime("%Y-%m-%d") if f.created_at else "",
             "theme": _theme_of(f), "has_header_image": f.id in with_header
@@ -2293,7 +2298,10 @@ def _clean_questions(questions):
 @login_required
 @api_guard
 def my_forms_api():
-    forms = EvaluationForm.query.filter_by(created_by_id=current_user.id, is_active=True).order_by(EvaluationForm.id.desc()).all()
+    if _is_dev():
+        forms = EvaluationForm.query.filter_by(is_active=True).order_by(EvaluationForm.id.desc()).all()
+    else:
+        forms = EvaluationForm.query.filter_by(created_by_id=current_user.id, is_active=True).order_by(EvaluationForm.id.desc()).all()
     counts = {}
     if forms:
         counts = dict(db.session.query(FormAnonymousSubmission.form_id, func.count()).filter(FormAnonymousSubmission.form_id.in_([f.id for f in forms])).group_by(FormAnonymousSubmission.form_id).all())
@@ -2306,7 +2314,9 @@ def my_forms_api():
         out.append({
             "id": f.id, "title": f.title, "description": f.description or "", "form_category": f.form_category,
             "subject_code": f.subject_code or "N/A", "section_target": f.section_target or "ALL",
-            "academic_year": f.academic_year, "semester": f.semester, "response_count": n,
+            "created_by_name": f.created_by_name, "created_by_role": f.created_by_role,
+            "can_manage": True, "is_owner": bool(f.created_by_id == current_user.id),
+            "academic_year": f.academic_year, "semester": f.semester, "response_count": n, "total_submissions": n,
             "max_responses": f.max_responses or 0, "deadline_date": f.deadline_date, "is_active": f.is_active,
             "is_closed": expired or full, "close_reason": "Deadline Passed" if expired else ("Quota Reached" if full else None),
             "share_url": "/s/" + _form_share_token(f), "questions_locked": n > 0,
