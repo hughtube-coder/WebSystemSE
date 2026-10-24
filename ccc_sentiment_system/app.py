@@ -1784,20 +1784,7 @@ def generalize_html_branding(response):
                 <a href="/dashboard" onclick="window._loggingOut=true;" class="lx-floating-dash-pill" title="Return to LexiMetrix Analytics Dashboard">
                   📊 Back to Analytics Dashboard
                 </a>
-                <script>
-                  document.addEventListener('DOMContentLoaded', function() {
-                    var nav = document.querySelector('.nav-actions') || document.querySelector('header');
-                    if (nav && !document.getElementById('lxTopBackDashBtn')) {
-                      var a = document.createElement('a');
-                      a.id = 'lxTopBackDashBtn';
-                      a.href = '/dashboard';
-                      a.className = 'lx-back-dash-btn';
-                      a.innerHTML = '📊 Back to Dashboard';
-                      a.onclick = function() { window._loggingOut = true; };
-                      nav.insertBefore(a, nav.firstChild);
-                    }
-                  });
-                </script>
+                
                 """
                 if "</body>" in body:
                     body = body.replace("</body>", back_btn_snippet + "\n</body>", 1)
