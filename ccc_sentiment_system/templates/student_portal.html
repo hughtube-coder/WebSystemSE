@@ -500,9 +500,14 @@
 
             <div id="formBuilderWarnings" class="form-warning-banner"></div>
 
-            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
-                <button class="btn-nav" onclick="closeCreateFormModal()">Cancel</button>
-                <button class="btn-action" id="surveySubmitBtn" onclick="submitCreateForm()">Publish Survey</button>
+            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap;">
+                <button type="button" class="btn-nav" id="surveyDeleteFromEditBtn" onclick="openDeleteSurveyFromEdit()" style="display: none; background: rgba(244, 63, 94, 0.12); border-color: rgba(244, 63, 94, 0.4); color: #fb7185; font-weight: 700;">
+                    🗑️ Delete Survey
+                </button>
+                <div style="display: flex; gap: 8px; margin-left: auto;">
+                    <button type="button" class="btn-nav" onclick="closeCreateFormModal()">Cancel</button>
+                    <button type="button" class="btn-action" id="surveySubmitBtn" onclick="submitCreateForm()">Publish Survey</button>
+                </div>
             </div>
         </div>
     </div>
