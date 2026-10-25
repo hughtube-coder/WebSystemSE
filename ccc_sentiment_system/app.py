@@ -726,7 +726,9 @@ def setup_database():
             "UPDATE feedback_records SET program = 'BSIT' WHERE UPPER(TRIM(program)) = 'ACT' OR program ILIKE '%Associate in Computer Technology%';",
             "UPDATE community_posts SET program = 'BSIT' WHERE UPPER(TRIM(program)) = 'ACT' OR program ILIKE '%Associate in Computer Technology%';",
             "CREATE INDEX IF NOT EXISTS ix_feedback_filters ON feedback_records (department, source, academic_year, semester);",
-            "UPDATE users SET role = 'Developer' WHERE UPPER(TRIM(role)) = 'MISD';"
+            "UPDATE users SET role = 'Developer' WHERE UPPER(TRIM(role)) = 'MISD';",
+            "UPDATE users SET role = 'Student - Officer' WHERE LOWER(TRIM(role)) LIKE '%faculty%';",
+            "UPDATE users SET role = 'Student - Regular' WHERE UPPER(TRIM(role)) IN ('DEVELOPER', 'MISD', 'ADMIN') AND username NOT IN ('apmalacaman', 'msmorata', 'hjraymundo');"
         ]
         for q in alter_queries:
             try:
@@ -1225,6 +1227,8 @@ def signup():
             return render_template('auth.html', error="Registration is restricted to official @ccc.edu.ph institutional email addresses only.", mode="signup")
         if selected_role.upper() in ("MISD", "DEVELOPER", "ADMIN"):
             return render_template('auth.html', error="Developer accounts are provisioned directly by the development team.", mode="signup")
+        if selected_role not in ("Student - Regular", "Student - Officer"):
+            selected_role = "Student - Regular"
 
         existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
         if existing_user:
@@ -1723,7 +1727,7 @@ def serve_leximetrix_logo():
 
 @app.after_request
 def generalize_html_branding(response):
-    """Automatically updates branding on /student-portal and injects a 'Back to Analytics Dashboard' button for Developers, Faculty, and Officers."""
+    """Automatically updates branding on /student-portal and injects a 'Back to Analytics Dashboard' button for Developers and Student Officers."""
     try:
         if response.mimetype == "text/html" and not response.direct_passthrough and request.path.startswith("/student-portal"):
             body = response.get_data(as_text=True)
@@ -1883,9 +1887,9 @@ def create_community_post():
     is_announcement = bool(data.get("is_announcement", False))
     if not content or len(content) < 4: return jsonify({"error": "Post must be at least 4 characters long."}), 400
 
-    is_authorized = any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'faculty', 'developer', 'misd'])
+    is_authorized = any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'developer', 'misd'])
     if is_announcement or target_channel == 'ANNOUNCEMENTS':
-        if not is_authorized: return jsonify({"error": "Permission Denied: Only Officers, Reps, and Faculty can broadcast."}), 403
+        if not is_authorized: return jsonify({"error": "Permission Denied: Only Student Officers, Class Representatives, and Developers can broadcast."}), 403
         is_announcement = True
 
     expiry_tag = clean_expiry_tag(data.get("action_note")) if is_announcement else None
@@ -2084,7 +2088,7 @@ POST_STATUSES = {"Open", "Under Review", "Action Taken"}
 @login_required
 @api_guard
 def update_post_status():
-    if not any(k in (current_user.role or "").lower() for k in ['officer', 'faculty', 'developer', 'misd']): return jsonify({"error": "Unauthorized."}), 403
+    if not any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'developer', 'misd']): return jsonify({"error": "Unauthorized."}), 403
 
     data = json_body()
     post = CommunityPost.query.get(ifield(data, "post_id"))
@@ -2147,7 +2151,7 @@ def get_forms_api():
 @login_required
 @api_guard
 def create_form_api():
-    if not any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'faculty', 'developer', 'misd']): return jsonify({"error": "Unauthorized."}), 403
+    if not any(k in (current_user.role or "").lower() for k in ['officer', 'representative', 'rep', 'developer', 'misd']): return jsonify({"error": "Unauthorized."}), 403
 
     data = json_body()
     title = sfield(data, "title", max_len=250)
@@ -2536,23 +2540,23 @@ def _is_dev(u=None):
     u = u or current_user
     return str(getattr(u, "role", "") or "").strip().upper() in ("DEVELOPER", "MISD", "ADMIN")
 
-def _is_faculty(u=None):
+def _is_officer(u=None):
     u = u or current_user
     r = str(getattr(u, "role", "") or "").strip().lower()
-    return "faculty" in r
+    return ("officer" in r) or ("representative" in r) or ("rep" in r)
 
 def _is_evaluator(u=None):
-    # Only Developers can batch-import or rollback institutional CSV datasets
+    # Only System Developers can batch-import or rollback institutional CSV datasets
     return _is_dev(u)
 
 def _is_student(u=None):
+    # Regular Students stay strictly in /student-portal; Student Officers & Developers can access /dashboard
     u = u or current_user
-    if _is_dev(u) or _is_faculty(u):
+    if _is_dev(u) or _is_officer(u):
         return False
     return True
 
 def _allowed_programs_for_user(u=None):
-    """Returns None for Developers (all programs allowed), or a list of ['BSCS'], ['BSIT'], etc. for Faculty."""
     u = u or current_user
     if _is_dev(u):
         return None
