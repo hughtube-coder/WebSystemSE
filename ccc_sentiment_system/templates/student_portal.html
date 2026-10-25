@@ -609,7 +609,7 @@
                     Your feedback is analyzed by our AI engine to support peer representation and institutional action.
                 </div>
             </div>
-            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
             <button class="btn-action" id="createSurveyBtn" onclick="openCreateFormModal()">+ Create Formal Survey</button>
             {% endif %}
         </section>
@@ -731,7 +731,7 @@
                             <strong style="color: var(--txt-gold); font-size: 0.92rem;">Official Campus Events & Announcements</strong>
                         </div>
                         <p style="font-size: 0.8rem; color: var(--text-body); margin: 0; line-height: 1.5;">
-                            Broadcasts are authored exclusively by verified Student Officers, Class Representatives, and Faculty. You can review updates, vote to demonstrate consensus, and join discussions in the comments below.
+                            Broadcasts are authored exclusively by verified Student Officers, Class Representatives, and System Developers. You can review updates, vote to demonstrate consensus, and join discussions in the comments below.
                         </p>
                     </div>
 
@@ -743,7 +743,7 @@
                             <div class="anonymity-banner" id="composeAnonymityBadge">🛡️ 100% Anonymous Voice</div>
                         </div>
 
-                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                         <div style="margin-bottom: 10px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.35); padding: 7px 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px;" id="announcementCheckboxContainer">
                             <input type="checkbox" id="townIsAnnouncement" onchange="toggleAnnouncementMode(this.checked)" style="accent-color: #f59e0b; width: 16px; height: 16px; cursor: pointer;">
                             <label for="townIsAnnouncement" style="font-size: 0.78rem; font-weight: 700; color: var(--txt-gold); cursor: pointer;">
@@ -783,7 +783,7 @@
                         <div class="compose-main-grid">
                             <select id="townTargetChannel" class="select-input" style="margin-bottom:0;">
                                 <option value="ALL">Post to: Campus-Wide (All)</option>
-                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                                 <option value="ANNOUNCEMENTS">Post to: Official Announcements</option>
                                 {% endif %}
                                 <option value="DCI">Post to: DCI Channel</option>
@@ -856,7 +856,7 @@
                             <div class="surveys-overview-title">Formal Surveys</div>
                             <div class="surveys-overview-sub">Structured evaluations analyzed by our sentiment engine to surface actionable feedback.</div>
                         </div>
-                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                         <button class="btn-nav" id="btnToggleAuthored" onclick="toggleAuthoredSurveys()" style="color:var(--txt-gold); border-color:rgba(245,158,11,0.4);">
                             🧾 View Surveys Initiated by You
                         </button>
@@ -881,7 +881,7 @@
                         <div id="availableFormsContainer" class="forms-grid"></div>
                     </div>
                     
-                    {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'faculty' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                    {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
                     <div id="paneMySurveys" style="display:none;">
                         <div class="my-surveys-head">
                             <button class="btn-nav" onclick="toggleAuthoredSurveys()">❮ Back to Student Surveys</button>
