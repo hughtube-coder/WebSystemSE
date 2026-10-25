@@ -320,7 +320,7 @@ function runSplash(initialLoad) {
 const currentUserRole = window.APP_USER_ROLE || 'Student - Regular';
 const currentUserDept = window.APP_USER_DEPT || 'DCI';
 const roleLower = currentUserRole.toLowerCase();
-const isAuthorizedAnnouncer = roleLower.includes('officer') || roleLower.includes('representative') || roleLower.includes('rep') || roleLower.includes('faculty') || roleLower.includes('developer') || roleLower.includes('misd');
+const isAuthorizedAnnouncer = roleLower.includes('officer') || roleLower.includes('representative') || roleLower.includes('rep') || roleLower.includes('developer') || roleLower.includes('misd');
 
 let activeChannel = "ALL";
 let activeFormUnderFill = null;
@@ -1790,7 +1790,7 @@ function renderTownHallFeed() {
                     <div class="resolution-header-row">
                         <div>
                             <strong>${p.status === 'Action Taken' ? '🟢 Official Action Taken' : '🟡 Review in Progress'}</strong>
-                            <span style="font-size:0.72rem; color:var(--text-muted); margin-left:6px;">by ${esc(p.action_by || 'Faculty')}</span>
+                            <span style="font-size:0.72rem; color:var(--text-muted); margin-left:6px;">by ${esc(p.action_by || 'Student Officer')}</span>
                         </div>
                         <div class="resolution-reaction-bar">
                             <span style="font-size:0.68rem; color:var(--text-muted); margin-right:2px;">Reaction:</span>
@@ -2526,18 +2526,18 @@ function buildStudentTourSteps() {
     const goTownHall = () => { _showSurveyListPane(); switchPortalTab('townhall'); };
     const goSurveys = () => { switchPortalTab('surveys'); _showSurveyListPane(); };
     const steps = [
-        { title: "Welcome to your Voice Collective", body: "This is your safe space to share feedback and help improve our campus. There are two main areas: the <strong>Town Hall</strong> for open discussions, and <strong>Formal Surveys</strong> for school evaluations. " + (isAuthorizedAnnouncer ? "As a student leader or faculty member, you also get extra tools to post announcements and create surveys." : "(On a phone? You can also swipe left or right on this card!)") },
+        { title: "Welcome to your Voice Collective", body: "This is your safe space to share feedback and help improve our campus. There are two main areas: the <strong>Town Hall</strong> for open discussions, and <strong>Formal Surveys</strong> for school evaluations. " + (isAuthorizedAnnouncer ? "As a student officer or representative, you also get extra tools to post announcements and create surveys." : "(On a phone? You can also swipe left or right on this card!)") },
         { target: '#pulseSectionTarget', before: goTownHall, title: "Department Pulse", body: "A quick look at how students in our department are feeling right now: how many voices were recorded and the mix of positive, neutral, and negative feedback." },
         { target: '#tabTownHall', before: goTownHall, title: "Town Hall Forum", body: "Open the menu (☰ on phones) to visit the <strong>Town Hall</strong>, where you can read what classmates are talking about and share your own thoughts." },
         { target: '#sidebarChannelsSection', title: "Channels", body: "Switch between <strong>🏛️ Campus-Wide</strong> posts, official <strong>📣 Announcements</strong>, and our own <strong>💻 DCI Channel</strong>." },
         { target: '.sidebar-privacy-box', title: "Your Privacy is Protected", body: "Everything you post or answer is <strong>100% anonymous</strong>. Your name is never shown, and if someone accidentally types a phone number, email, or student ID, the system hides it automatically." },
         { target: () => document.getElementById('townhallComposeCard') || _parentOf('townContent'), before: goTownHall, title: "Share Your Voice", body: "Write your idea, concern, or praise in English, Tagalog, or Taglish, pick a category, and post. You can also tick the preview box before posting to see how the AI reads your message." },
     ];
-    if (isAuthorizedAnnouncer) steps.push({ target: () => { const c = document.getElementById('townIsAnnouncement'); return (c && c.closest('div')) || document.getElementById('townhallComposeCard'); }, before: goTownHall, title: "Post Announcements & Updates", body: "As a student leader or faculty member, you can tick <strong>Official Announcement</strong> to pin important news at the top, or post an <strong>Action Taken</strong> update on a student concern." });
+    if (isAuthorizedAnnouncer) steps.push({ target: () => { const c = document.getElementById('townIsAnnouncement'); return (c && c.closest('div')) || document.getElementById('townhallComposeCard'); }, before: goTownHall, title: "Post Announcements & Updates", body: "As a student officer or representative, you can tick <strong>Official Announcement</strong> to pin important news at the top, or post an <strong>Action Taken</strong> update on a student concern." });
     steps.push(
         { target: () => document.querySelector('#townhallFeedContainer .comments-toggle-btn') || document.querySelector('#townhallFeedContainer .post-card') || document.getElementById('townhallFeedContainer'), before: goTownHall, title: "Vote & Join the Conversation", body: "Use the <strong>▲ ▼ arrows</strong> to agree or disagree so important topics rise to the top, and tap <strong>Join the discussion</strong> to read or write anonymous comments." },
         { target: '#feedSearchInput', before: goTownHall, title: "Search Posts", body: "Looking for a specific topic, room, or subject? Type any word here to filter the posts right away." },
-        { target: '#tabSurveys', before: goSurveys, title: "Formal Surveys", body: "Switch to <strong>📋 Formal Surveys</strong> to answer official evaluations from your teachers and student officers. Your answers stay completely anonymous." },
+        { target: '#tabSurveys', before: goSurveys, title: "Formal Surveys", body: "Switch to <strong>📋 Formal Surveys</strong> to answer official evaluations from your student officers and department representatives. Your answers stay completely anonymous." },
         { target: '#surveyCategoryTabs', before: goSurveys, title: "Track Your Surveys", body: "<strong>Available</strong> shows surveys you can answer now. <strong>Due Today</strong> closes tonight, <strong>Missed</strong> shows past deadlines, and <strong>Completed</strong> lists the ones you already finished." },
         { target: '#formSearchInput', before: goSurveys, title: "Find & Answer a Survey", body: "Type a title or subject code to find a survey quickly, then tap <strong>Fill Out Evaluation</strong> to send your ratings and comments." }
     );
