@@ -420,7 +420,7 @@
             <form method="POST" action="{{ url_for('signup') }}" id="signupForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <h2 class="form-title">Create Account</h2>
-                <p class="form-subtitle">Register institutional student or faculty credentials</p>
+                <p class="form-subtitle">Register institutional student or student officer credentials</p>
 
                 {% if error and mode == 'signup' %}
                     <div class="alert-error" role="alert">{{ error }}</div>
@@ -454,7 +454,6 @@
                         <select name="role" id="roleSelect" class="select-control" onchange="onRoleOrDeptChanged()" required>
                             <option value="Student - Regular" selected>Student (Regular)</option>
                             <option value="Student - Officer">Student Officer / Representative</option>
-                            <option value="Faculty">Faculty / Officer Evaluator</option>
                         </select>
                     </div>
 
@@ -495,7 +494,7 @@
             <form method="POST" action="{{ url_for('login') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <h2 class="form-title">LexiMetrix Sign In</h2>
-                <p class="form-subtitle">Developer, Faculty/Officer &amp; Student Evaluation Portal</p>
+                <p class="form-subtitle">Developer, Student Officer &amp; Student Evaluation Portal</p>
 
                 {% with messages = get_flashed_messages() %}
                     {% if messages %}
@@ -529,7 +528,7 @@
                 <button type="submit" class="btn-action">Authorize & Enter Portal</button>
 
                 <div class="mobile-toggle">
-                    New evaluator or student? <span onclick="togglePanels(true)">Sign Up</span>
+                    New student or officer? <span onclick="togglePanels(true)">Sign Up</span>
                 </div>
             </form>
         </div>
@@ -548,7 +547,7 @@
                 <div class="overlay-panel overlay-right">
                     <img src="/static/leximetrix-logo.svg" alt="LexiMetrix Emblem" class="auth-logo" onmouseenter="if(!this._t||Date.now()-this._t>2300){this._t=Date.now();this.src='/static/leximetrix-logo.svg?m='+this._t;}" onclick="this._t=Date.now();this.src='/static/leximetrix-logo.svg?m='+this._t;" title="Hover or click to replay Binary Code-to-Logo Morph">
                     <span class="brand-pill">LexiMetrix Analytics</span>
-                    <h2 class="overlay-title">Student & Faculty Portal</h2>
+                    <h2 class="overlay-title">Student Community Portal</h2>
                     <p class="overlay-desc">Register with your institutional email. Class representatives and officers can publish custom event forms, while students submit real-time evaluations.</p>
                     <button class="btn-ghost" onclick="togglePanels(true)">Register Account</button>
                 </div>
