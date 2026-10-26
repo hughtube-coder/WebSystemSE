@@ -735,105 +735,160 @@
                         </p>
                     </div>
 
-                    <div class="townhall-compose-card" id="townhallComposeCard">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
-                            <strong style="color: var(--text-heading); font-size: 0.94rem;">
-                                Participatory Feed: <span id="currentChannelLabel" style="color:var(--txt-blue);">Campus-Wide</span>
-                            </strong>
+                    <!-- FACEBOOK-STYLE COLLAPSED COMPOSER TRIGGER CARD -->
+                    <div class="townhall-compose-card fb-compose-shell" id="townhallComposeCard">
+                        <div class="fb-compose-top-meta">
+                            <span class="fb-feed-scope-label">
+                                Participatory Feed: <strong id="currentChannelLabel" style="color:var(--txt-blue);">Campus-Wide</strong>
+                            </span>
                             <div class="anonymity-banner" id="composeAnonymityBadge">🛡️ 100% Anonymous Voice</div>
                         </div>
 
-                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
-                        <div style="margin-bottom: 10px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.35); padding: 7px 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px;" id="announcementCheckboxContainer">
-                            <input type="checkbox" id="townIsAnnouncement" onchange="toggleAnnouncementMode(this.checked)" style="accent-color: #f59e0b; width: 16px; height: 16px; cursor: pointer;">
-                            <label for="townIsAnnouncement" style="font-size: 0.78rem; font-weight: 700; color: var(--txt-gold); cursor: pointer;">
-                                📌 Broadcast as Official Campus Event / Announcement
-                            </label>
+                        <div class="fb-compose-trigger-row">
+                            <div class="fb-compose-avatar" id="fbTriggerAvatar" title="100% Anonymous Student Shield">🛡️</div>
+                            <button type="button" class="fb-compose-pill-btn" id="fbComposeTriggerBtn" onclick="openComposeModal()">
+                                <span id="fbComposeTriggerText">What's on your mind, {{ username }}?</span>
+                            </button>
                         </div>
 
-                        <!-- Upgraded Announcement Expiration Picker for COMPOSE -->
-                        <div id="expirationContainer" style="display:none; margin-bottom: 12px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.35); padding: 10px; border-radius: 8px;">
-                            <label style="font-size:0.74rem; color:var(--txt-gold); font-weight:700; display:block; margin-bottom:4px;">Announcement Expiration Date (optional)</label>
-                            <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px;">If set, this announcement will automatically disappear from the feed after this date.</p>
-                            
-                            <div class="deadline-picker-box">
-                                <button type="button" class="btn-browse-img" onclick="triggerTownCalendarPicker()" title="Select date from calendar">
-                                    📅 Pick Date
-                                </button>
-                                <input type="date" id="townPickerDatePart" class="deadline-date-input" onchange="handleTownDateSelected(this.value)">
-                                
-                                <button type="button" class="btn-browse-img" onclick="triggerTownClockPicker()" title="Select cutoff time" style="margin-left:auto; background:rgba(37,99,235,0.15); border-color:rgba(59,130,246,0.35); color:var(--txt-blue);">
-                                    ⏰ Pick Time
-                                </button>
-                                <input type="time" id="townPickerTimePart" class="deadline-date-input" value="23:59" onchange="syncTownDeadlineValue()">
-                            </div>
-                            <input type="hidden" id="townExpirationDate">
-                            
-                            <div id="townDeadlineFormattedBadge" style="display:none; align-items:center; gap:6px; margin-top:5px; font-size:0.74rem; color:var(--txt-gold);">
-                                <span>🗓️ <strong id="townDeadlineFormattedText">Expiration Set</strong></span>
-                                <button type="button" onclick="clearTownDeadlineSelection()" style="background:none; border:none; color:var(--txt-red); cursor:pointer; font-weight:bold; font-size:0.72rem;">✕ Clear</button>
-                            </div>
+                        <div class="fb-compose-divider"></div>
+
+                        <div class="fb-compose-actions-bar">
+                            <button type="button" class="fb-quick-btn" onclick="openComposeModal('photo')">
+                                <span class="fb-qb-ic" style="color:#10b981;">🖼️</span>
+                                <span>Photo / Image</span>
+                            </button>
+                            <button type="button" class="fb-quick-btn" onclick="openComposeModal('link')">
+                                <span class="fb-qb-ic" style="color:#38bdf8;">🔗</span>
+                                <span>Reference Link</span>
+                            </button>
+                            <button type="button" class="fb-quick-btn" onclick="openComposeModal('ai')">
+                                <span class="fb-qb-ic" style="color:#a855f7;">🔬</span>
+                                <span>AI Sentiment Check</span>
+                            </button>
+                            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                            <button type="button" class="fb-quick-btn fb-quick-btn-gold" id="townComposeAnnounceChip" onclick="openComposeModal('announcement')">
+                                <span class="fb-qb-ic">📌</span>
+                                <span>Official Broadcast</span>
+                            </button>
+                            {% endif %}
                         </div>
-                        {% endif %}
+                    </div>
 
-                        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;" id="composerNoticeText">
-                            Share feedback or report an issue. Peers can upvote (Agree) or downvote (Disagree) to reflect collective community consensus.
-                        </p>
-
-                        <div class="compose-main-grid">
-                            <select id="townTargetChannel" class="select-input" style="margin-bottom:0;">
-                                <option value="ALL">Post to: Campus-Wide (All)</option>
-                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
-                                <option value="ANNOUNCEMENTS">Post to: Official Announcements</option>
-                                {% endif %}
-                                <option value="DCI">Post to: DCI Channel</option>
-                            </select>
-
-                            <select id="townCategory" class="select-input" style="margin-bottom:0;">
-                                <option value="Campus Facilities & Infrastructure">Facilities & Laboratory</option>
-                                <option value="Campus Events & Traditions">Sportsfest / Alay Lakad / Events</option>
-                                <option value="Instructional Delivery & Pedagogy">Instructional Delivery & Pacing</option>
-                                <option value="Faculty Demeanor & Approachability">Faculty Approachability & Welfare</option>
-                                <option value="General Academic Feedback">General Campus Life</option>
-                            </select>
-
-                            <input type="text" id="townContent" placeholder="Describe the announcement, issue, or feedback..." class="text-input" style="margin-bottom:0;">
-                        </div>
-
-                        <div class="compose-media-grid">
-                            <div class="image-drop-container" id="townImageDropContainer">
-                                <button type="button" class="btn-browse-img" onclick="document.getElementById('townFileInput').click()" title="Click to browse folder or drag image here">
-                                    📁 Browse
-                                </button>
-                                <input type="file" id="townFileInput" accept="image/*" style="display:none;" onchange="handleFilePicked(event, 'town')">
-                                <input type="text" id="townImageUrl" placeholder="Or drag image file here / paste image URL..." class="image-drop-input" oninput="handleUrlTyped('town')">
+                    <!-- FACEBOOK-STYLE EXPANDED "CREATE POST" MODAL (Desktop Dialog & Mobile Sheet) -->
+                    <div id="townComposeModal" class="modal-overlay fb-compose-modal-overlay" onclick="if(event.target===this) closeComposeModal()">
+                        <div class="modal-card fb-compose-modal-card" role="dialog" aria-modal="true" aria-labelledby="fbModalHeaderTitle">
+                            <div class="fb-modal-header">
+                                <div style="width:34px;"></div>
+                                <h3 id="fbModalHeaderTitle" class="fb-modal-title">Create Post</h3>
+                                <button type="button" class="fb-modal-close-btn" onclick="closeComposeModal()" aria-label="Close composer">✕</button>
                             </div>
 
-                            <input type="url" id="townLinkUrl" placeholder="🔗 Resource Link (optional): https://portal.edu.ph/..." class="text-input" style="margin-bottom:0; font-size:0.78rem;">
-                        </div>
+                            <div class="fb-modal-body">
+                                <div class="fb-author-row">
+                                    <div class="fb-compose-avatar fb-modal-avatar" id="fbModalAvatar">🛡️</div>
+                                    <div class="fb-author-meta">
+                                        <div class="fb-author-name-line">
+                                            <strong id="fbModalAuthorLabel" style="color:var(--text-heading); font-size:0.9rem;">Verified Student ({{ department }})</strong>
+                                            <span class="fb-anon-mini-pill" id="fbModalAnonPill">🛡️ 100% Anonymous</span>
+                                        </div>
+                                        <div class="fb-audience-pills-row">
+                                            <select id="townTargetChannel" class="fb-pill-select" aria-label="Target channel">
+                                                <option value="ALL">🌐 Campus-Wide (All)</option>
+                                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                                                <option value="ANNOUNCEMENTS">📣 Official Announcements</option>
+                                                {% endif %}
+                                                <option value="DCI">💻 DCI Channel</option>
+                                            </select>
 
-                        <div class="image-preview-badge" id="townPreviewBadge">
-                            <img src="" alt="Thumbnail" class="preview-thumb-img" id="townPreviewImg">
-                            <div class="preview-meta-info">
-                                <span class="preview-filename" id="townPreviewName">Attached Image</span>
-                                <button type="button" class="btn-remove-thumb" onclick="removeAttachedImage('town')">✕ Remove Image</button>
-                            </div>
-                        </div>
-
-                        <!-- TOGGLEABLE STUDENT AI SENTIMENT INSPECTION FEATURE -->
-                        <div style="margin-top: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); padding: 8px 12px; border-radius: var(--radius-sm);">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 1rem;">🔬</span>
-                                <div>
-                                    <label for="inspectAiToggle" style="font-size: 0.8rem; font-weight: 700; color: var(--txt-blue); cursor: pointer;">Preview AI Analysis</label>
-                                    <div style="font-size: 0.7rem; color: var(--text-muted);">See how the AI understands your text before posting</div>
+                                            <select id="townCategory" class="fb-pill-select" aria-label="Focus category">
+                                                <option value="Campus Facilities & Infrastructure">🏢 Facilities &amp; Laboratory</option>
+                                                <option value="Campus Events & Traditions">🎉 Sportsfest / Events</option>
+                                                <option value="Instructional Delivery & Pedagogy">📚 Instructional Delivery</option>
+                                                <option value="Faculty Demeanor & Approachability">🤝 Faculty Approachability</option>
+                                                <option value="General Academic Feedback">🎓 General Campus Life</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <input type="checkbox" id="inspectAiToggle" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
-                        </div>
 
-                        <div style="text-align: right;">
-                            <button class="btn-action" id="btnSubmitPost" onclick="submitTownHallPost()">📢 Submit to Community Channel</button>
+                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                                <div class="fb-announce-toggle-bar" id="announcementCheckboxContainer">
+                                    <input type="checkbox" id="townIsAnnouncement" onchange="toggleAnnouncementMode(this.checked)" style="accent-color: #f59e0b; width: 16px; height: 16px; cursor: pointer;">
+                                    <label for="townIsAnnouncement" style="font-size: 0.78rem; font-weight: 700; color: var(--txt-gold); cursor: pointer;">
+                                        📌 Broadcast as Official Campus Event / Announcement
+                                    </label>
+                                </div>
+
+                                <div id="expirationContainer" class="fb-expiry-box" style="display:none;">
+                                    <label style="font-size:0.74rem; color:var(--txt-gold); font-weight:700; display:block; margin-bottom:3px;">Announcement Expiration Date (optional)</label>
+                                    <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px;">If set, this announcement will automatically disappear from the feed after this date.</p>
+                                    <div class="deadline-picker-box">
+                                        <button type="button" class="btn-browse-img" onclick="triggerTownCalendarPicker()" title="Select date from calendar">📅 Pick Date</button>
+                                        <input type="date" id="townPickerDatePart" class="deadline-date-input" onchange="handleTownDateSelected(this.value)">
+                                        <button type="button" class="btn-browse-img" onclick="triggerTownClockPicker()" title="Select cutoff time" style="margin-left:auto; background:rgba(37,99,235,0.15); border-color:rgba(59,130,246,0.35); color:var(--txt-blue);">⏰ Pick Time</button>
+                                        <input type="time" id="townPickerTimePart" class="deadline-date-input" value="23:59" onchange="syncTownDeadlineValue()">
+                                    </div>
+                                    <input type="hidden" id="townExpirationDate">
+                                    <div id="townDeadlineFormattedBadge" style="display:none; align-items:center; gap:6px; margin-top:5px; font-size:0.74rem; color:var(--txt-gold);">
+                                        <span>🗓️ <strong id="townDeadlineFormattedText">Expiration Set</strong></span>
+                                        <button type="button" onclick="clearTownDeadlineSelection()" style="background:none; border:none; color:var(--txt-red); cursor:pointer; font-weight:bold; font-size:0.72rem;">✕ Clear</button>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <p class="fb-composer-notice" id="composerNoticeText">
+                                    Share feedback or report an issue. Peers can upvote (Agree) or downvote (Disagree) to reflect collective community consensus.
+                                </p>
+
+                                <textarea id="townContent" class="fb-post-textarea" rows="4" placeholder="What's on your mind, {{ username }}? Describe the announcement, issue, or feedback in English, Tagalog, or Taglish..." oninput="onTownContentInput(this)"></textarea>
+
+                                <div class="image-preview-badge" id="townPreviewBadge" style="margin-bottom: 10px;">
+                                    <img src="" alt="Thumbnail" class="preview-thumb-img" id="townPreviewImg">
+                                    <div class="preview-meta-info">
+                                        <span class="preview-filename" id="townPreviewName">Attached Image</span>
+                                        <button type="button" class="btn-remove-thumb" onclick="removeAttachedImage('town')">✕ Remove Image</button>
+                                    </div>
+                                </div>
+
+                                <div class="fb-attachments-grid">
+                                    <div class="fb-attach-card image-drop-container" id="townImageDropContainer">
+                                        <div class="fb-attach-head">
+                                            <span class="fb-attach-icon" style="color:#10b981;">🖼️</span>
+                                            <span class="fb-attach-title">Photo / Image</span>
+                                            <button type="button" class="btn-browse-img fb-browse-mini" onclick="document.getElementById('townFileInput').click()">📁 Browse</button>
+                                        </div>
+                                        <input type="file" id="townFileInput" accept="image/*" style="display:none;" onchange="handleFilePicked(event, 'town')">
+                                        <input type="text" id="townImageUrl" placeholder="Drag photo here or paste image URL..." class="fb-attach-input" oninput="handleUrlTyped('town')">
+                                    </div>
+
+                                    <div class="fb-attach-card" id="townLinkCardBox">
+                                        <div class="fb-attach-head">
+                                            <span class="fb-attach-icon" style="color:#38bdf8;">🔗</span>
+                                            <span class="fb-attach-title">Reference Link <small style="color:var(--text-muted); font-weight:500;">(optional)</small></span>
+                                        </div>
+                                        <input type="url" id="townLinkUrl" placeholder="https://portal.edu.ph/..." class="fb-attach-input">
+                                    </div>
+                                </div>
+
+                                <label class="fb-ai-toggle-row" for="inspectAiToggle">
+                                    <div class="fb-ai-toggle-info">
+                                        <span class="fb-ai-toggle-icon">🔬</span>
+                                        <div>
+                                            <div class="fb-ai-toggle-title">Preview AI Analysis</div>
+                                            <div class="fb-ai-toggle-sub">See how the AI understands your text before posting</div>
+                                        </div>
+                                    </div>
+                                    <span class="fb-switch-wrap">
+                                        <input type="checkbox" id="inspectAiToggle" class="fb-switch-input">
+                                        <span class="fb-switch-slider"></span>
+                                    </span>
+                                </label>
+
+                                <button type="button" class="btn-action fb-submit-post-btn" id="btnSubmitPost" onclick="submitTownHallPost()">
+                                    📢 Post to Community Channel
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -946,7 +1001,7 @@
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn-nav" onclick="closeAiInspectionModal()">Cancel & Edit</button>
+                <button class="btn-nav" onclick="closeAiInspectionModal(); openComposeModal();">Cancel &amp; Edit</button>
                 <button class="btn-action" onclick="confirmAndPublishPost()">Confirm & Publish Post</button>
             </div>
         </div>
