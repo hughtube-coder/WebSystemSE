@@ -1855,6 +1855,80 @@ function renderTownHallFeed() {
     });
 }
 
+// ==========================================================
+// FACEBOOK-STYLE EXPANDABLE COMPOSER CONTROLLER
+// ==========================================================
+function syncComposeTriggerBar() {
+    const triggerTextEl = document.getElementById('fbComposeTriggerText');
+    const triggerBtn = document.getElementById('fbComposeTriggerBtn');
+    const contentEl = document.getElementById('townContent');
+    if (!triggerTextEl) return;
+    const draft = contentEl ? contentEl.value.trim() : '';
+    const uname = window.APP_USERNAME || 'Student';
+    const annChk = document.getElementById('townIsAnnouncement');
+    const isAnn = Boolean(annChk && annChk.checked);
+    if (draft) {
+        triggerTextEl.textContent = draft.length > 78 ? draft.slice(0, 78) + '…' : draft;
+        if (triggerBtn) triggerBtn.classList.add('has-draft');
+    } else {
+        triggerTextEl.textContent = isAnn
+            ? `Broadcast an official campus announcement, ${uname}...`
+            : `What's on your mind, ${uname}?`;
+        if (triggerBtn) triggerBtn.classList.remove('has-draft');
+    }
+}
+
+function onTownContentInput(textarea) {
+    if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(Math.max(textarea.scrollHeight, 108), 280) + 'px';
+    }
+    syncComposeTriggerBar();
+}
+
+function openComposeModal(focusMode) {
+    openModal('townComposeModal');
+    const contentEl = document.getElementById('townContent');
+    if (focusMode === 'announcement') {
+        const chk = document.getElementById('townIsAnnouncement');
+        if (chk && !chk.checked) {
+            chk.checked = true;
+            toggleAnnouncementMode(true);
+        }
+    } else if (focusMode === 'ai') {
+        const aiChk = document.getElementById('inspectAiToggle');
+        if (aiChk) aiChk.checked = true;
+    }
+
+    setTimeout(() => {
+        if (focusMode === 'photo') {
+            const dropBox = document.getElementById('townImageDropContainer');
+            if (dropBox) {
+                dropBox.classList.add('fb-attach-highlight');
+                setTimeout(() => dropBox.classList.remove('fb-attach-highlight'), 1400);
+            }
+            const imgInp = document.getElementById('townImageUrl');
+            if (imgInp) imgInp.focus();
+        } else if (focusMode === 'link') {
+            const linkBox = document.getElementById('townLinkCardBox');
+            if (linkBox) {
+                linkBox.classList.add('fb-attach-highlight');
+                setTimeout(() => linkBox.classList.remove('fb-attach-highlight'), 1400);
+            }
+            const linkInp = document.getElementById('townLinkUrl');
+            if (linkInp) linkInp.focus();
+        } else if (contentEl) {
+            contentEl.focus();
+            onTownContentInput(contentEl);
+        }
+    }, 140);
+}
+
+function closeComposeModal() {
+    closeModal('townComposeModal');
+    syncComposeTriggerBar();
+}
+
 async function submitTownHallPost() {
     const content = document.getElementById('townContent').value.trim();
     const category = document.getElementById('townCategory').value;
@@ -1908,6 +1982,7 @@ async function submitTownHallPost() {
                     clausesContainer.innerHTML = '<div>No distinct sentiment clauses detected.</div>';
                 }
 
+                closeModal('townComposeModal');
                 openModal('aiInspectionModal');
                 return;
             }
@@ -1934,7 +2009,8 @@ async function executePostSubmission(payload) {
         });
         if (res.ok) {
             const okData = await res.json().catch(() => ({}));
-            document.getElementById('townContent').value = '';
+            const tc = document.getElementById('townContent');
+            if (tc) { tc.value = ''; tc.style.height = ''; }
             document.getElementById('townLinkUrl').value = '';
             removeAttachedImage('town');
             const announcementCheckbox = document.getElementById('townIsAnnouncement');
@@ -1942,6 +2018,8 @@ async function executePostSubmission(payload) {
             const inspectToggle = document.getElementById('inspectAiToggle');
             if (inspectToggle) inspectToggle.checked = false;
             _clearExpiry('town');
+            toggleAnnouncementMode(false);
+            closeComposeModal();
 
             showToast(okData.masked ? "Posted. A few words were replaced with asterisks to keep the community respectful." : "Posted successfully!", 'success');
             fetchTownHallFeed();
