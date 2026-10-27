@@ -831,7 +831,7 @@ html[data-theme="light"] body #toast {
             </div>
         </div>
         <div class="nav-actions">
-            <span class="role-badge">{{ 'Developer' if role.upper() == 'MISD' else role }}</span>
+            <span class="role-badge">{{ role }}</span>
             <span class="user-name-display">{{ username }}</span>
             <button type="button" id="tourBtn" class="btn-nav btn-tour" onclick="CCCTour.start()" title="Take a guided tour of the portal" aria-label="Take a guided tour">❓ <span class="btn-label">Tour</span></button>
             <button type="button" id="themeToggle" class="btn-nav theme-toggle" onclick="toggleTheme()" aria-label="Switch to light mode" aria-pressed="false" title="Switch to light mode">&#9728;&#65039;</button>
@@ -848,7 +848,7 @@ html[data-theme="light"] body #toast {
                     Your feedback is analyzed by our AI engine to support peer representation and institutional action.
                 </div>
             </div>
-            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() %}
             <button class="btn-action" id="createSurveyBtn" onclick="openCreateFormModal()">+ Create Formal Survey</button>
             {% endif %}
         </section>
@@ -1005,7 +1005,7 @@ html[data-theme="light"] body #toast {
                                 <span class="fb-qb-ic" style="color:#a855f7;">🔬</span>
                                 <span>AI Sentiment Check</span>
                             </button>
-                            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                            {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() %}
                             <button type="button" class="fb-quick-btn fb-quick-btn-gold" id="townComposeAnnounceChip" onclick="openComposeModal('announcement')">
                                 <span class="fb-qb-ic">📌</span>
                                 <span>Official Broadcast</span>
@@ -1034,7 +1034,7 @@ html[data-theme="light"] body #toast {
                                         <div class="fb-audience-pills-row">
                                             <select id="townTargetChannel" class="fb-pill-select" aria-label="Target channel">
                                                 <option value="ALL">🌐 Campus-Wide (All)</option>
-                                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() %}
                                                 <option value="ANNOUNCEMENTS">📣 Official Announcements</option>
                                                 {% endif %}
                                                 <option value="DCI">💻 DCI Channel</option>
@@ -1051,7 +1051,7 @@ html[data-theme="light"] body #toast {
                                     </div>
                                 </div>
 
-                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                                {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() %}
                                 <div class="fb-announce-toggle-bar" id="announcementCheckboxContainer">
                                     <input type="checkbox" id="townIsAnnouncement" onchange="toggleAnnouncementMode(this.checked)" style="accent-color: #f59e0b; width: 16px; height: 16px; cursor: pointer;">
                                     <label for="townIsAnnouncement" style="font-size: 0.78rem; font-weight: 700; color: var(--txt-gold); cursor: pointer;">
@@ -1150,7 +1150,7 @@ html[data-theme="light"] body #toast {
                             <div class="surveys-overview-title">Formal Surveys</div>
                             <div class="surveys-overview-sub">Structured evaluations analyzed by our sentiment engine to surface actionable feedback.</div>
                         </div>
-                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                        {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() %}
                         <button class="btn-nav" id="btnToggleAuthored" onclick="toggleAuthoredSurveys()" style="color:var(--txt-gold); border-color:rgba(245,158,11,0.4);">
                             🧾 View Surveys Initiated by You
                         </button>
@@ -1175,7 +1175,7 @@ html[data-theme="light"] body #toast {
                         <div id="availableFormsContainer" class="forms-grid"></div>
                     </div>
                     
-                    {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() or 'misd' in role.lower() %}
+                    {% if 'officer' in role.lower() or 'representative' in role.lower() or 'rep' in role.lower() or 'developer' in role.lower() %}
                     <div id="paneMySurveys" style="display:none;">
                         <div class="my-surveys-head">
                             <button class="btn-nav" onclick="toggleAuthoredSurveys()">❮ Back to Student Surveys</button>
