@@ -460,7 +460,7 @@
             .btn-nav, .btn-action, .dept-tab, .source-tab, .btn-page, .term-select { min-height: 44px; }
         }
 
-        /* ===== PRIORITY 3: MISD SENTIMENT OVERRIDE & CONFUSION MATRIX / F1 EVALUATION ===== */
+        /* ===== PRIORITY 3: DEVELOPER SENTIMENT OVERRIDE & CONFUSION MATRIX / F1 EVALUATION ===== */
         .badge-Verified { background: rgba(16, 185, 129, 0.14); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); display: inline-flex; font-size: 0.65rem; padding: 3px 8px; }
         .badge-Overridden { background: rgba(59, 130, 246, 0.16); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.38); display: inline-flex; font-size: 0.65rem; padding: 3px 8px; }
         .override-box { background: rgba(15, 26, 48, 0.78); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); padding: 16px; margin-bottom: 18px; }
@@ -985,7 +985,7 @@
                 </div>
             </div>
 
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <div class="override-box" id="modalOverrideBox">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <div>
@@ -1009,7 +1009,7 @@
             {% endif %}
 
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
-                {% if role in ['Developer', 'MISD', 'Admin'] %}
+                {% if role in ['Developer', 'Admin'] %}
                 <button type="button" id="btnDeleteFeedbackRecord" class="btn-nav" onclick="deleteCurrentFeedbackRecord(this)" style="color: #fb7185; border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.1); font-weight: 700;">
                     🗑️ Delete Inappropriate Record
                 </button>
@@ -1021,8 +1021,8 @@
         </div>
     </div>
 
-    <!-- Add Academic Year Modal (MISD Only) -->
-    {% if role in ['Developer', 'MISD', 'Admin'] %}
+    <!-- Add Academic Year Modal (Developer Only) -->
+    {% if role in ['Developer', 'Admin'] %}
     <div id="addYearModal" class="modal-overlay">
         <div class="modal-sheet" style="text-align: left; width: min(90%, 420px);">
             <h4 style="color: var(--text-title); font-size: 1.15rem; margin-bottom: 8px;">Register Academic Year</h4>
@@ -1070,7 +1070,7 @@
     </form>
 
     <!-- Batch CSV Ingestion & Slang Manager Modals (Developer Only) -->
-    {% if role in ['Developer', 'MISD', 'Admin'] %}
+    {% if role in ['Developer', 'Admin'] %}
     <div id="csvModal" class="modal-overlay">
         <div class="modal-card" style="width: min(94%, 740px); max-height: 92vh; overflow-y: auto;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
@@ -1132,7 +1132,7 @@
         </div>
     </div>
 
-    <!-- Slang Manager Modal (MISD Only) -->
+    <!-- Slang Manager Modal (Developer Only) -->
     <div id="lexiconModal" class="modal-overlay">
         <div class="modal-card" style="width: min(92%, 680px);">
             <h3 style="color:var(--text-title); margin-bottom: 6px;">Dynamic Taglish Slang Manager</h3>
@@ -1166,8 +1166,8 @@
     </div>
     {% endif %}
 
-    <!-- AI Confusion Matrix & F1-Score Evaluation Modal (MISD Only) -->
-    {% if role in ['Developer', 'MISD', 'Admin'] %}
+    <!-- AI Confusion Matrix & F1-Score Evaluation Modal (Developer Only) -->
+    {% if role in ['Developer', 'Admin'] %}
     <div id="modelEvalModal" class="modal-overlay">
         <div class="modal-card" style="width: min(95%, 920px); max-height: 92vh; overflow-y: auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
@@ -1418,7 +1418,7 @@
                 </div>
             </details>
 
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <!-- Optional Collapsible Single-Sentence Diagnostic Tester (For Developer Verification) -->
             <details style="background:rgba(255,255,255,0.02); border:1px dashed var(--border-light); border-radius:12px; padding:12px 16px; margin-bottom:14px;">
                 <summary style="cursor:pointer; font-size:0.8rem; font-weight:700; color:#38bdf8;">
@@ -1470,11 +1470,11 @@
         <div class="nav-actions" id="navActionsTarget">
             <a href="{{ url_for('student_portal') }}" id="studentPortalNavBtn" onclick="window._loggingOut=true;" class="btn-nav" title="Switch to the Student Feedback & Survey Portal" style="text-decoration:none; border-color:rgba(99,102,241,0.4); color:#a5b4fc;">🏛️ Student Portal</a>
             <button type="button" class="btn-nav btn-tour" onclick="CCCTour.start()" title="Take a guided tour of this dashboard" style="border-color:rgba(245,158,11,0.4); color:var(--txt-gold);">❓ Tour</button>
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <button class="btn-nav" onclick="openCsvModal()" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📥 Upload CSV &amp; Template</button>
             {% endif %}
             <button class="btn-nav" onclick="exportCurrentCsv()">Export CSV</button>
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <button class="btn-nav" onclick="openLexiconModal()">Slang Manager</button>
             <button class="btn-nav" id="evalNavBtn" onclick="openModelEvalModal()" style="border-color:rgba(16,185,129,0.45); color:#34d399; font-weight:700;">📊 AI Evaluation (F1)</button>
             {% endif %}
@@ -1509,13 +1509,13 @@
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => document.getElementById('keywordCloudTarget').scrollIntoView({behavior:'smooth'}))">🔤 Recurring Lexicon Cloud</button>
 
             <div class="lx-side-section">Data &amp; Batch Tools</div>
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => openCsvModal())">📥 Upload CSV &amp; Template</button>
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => downloadCsvTemplate())">📋 Download CSV Template</button>
             {% endif %}
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => exportCurrentCsv())">📤 Export Filtered CSV</button>
 
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <div class="lx-side-section">Developer Controls</div>
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => openLexiconModal())">🛠️ Taglish Lexicon Studio</button>
             <button type="button" class="lx-side-btn" onclick="lxSideAct(() => openModelEvalModal())">🎯 AI F1 &amp; Confusion Matrix</button>
@@ -1534,14 +1534,14 @@
             <button class="source-tab active" onclick="switchSource('ALL', this)">🌐 All Evaluated Sources</button>
             <button class="source-tab" onclick="switchSource('Portal', this)">📱 Portal Submissions</button>
             <button class="source-tab" onclick="switchSource('CSV', this)">📁 Imported CSVs</button>
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <button class="source-tab" onclick="switchSource('Testing', this)">🧪 Benchmark &amp; Testing Logs</button>
             {% endif %}
         </div>
 
         <!-- Controls Toolbar: Program/Sentiment Tabs + Term/Year Filter -->
         <div class="controls-toolbar" id="dataSortBarTarget">
-            {% if role in ['Developer', 'MISD', 'Admin'] %}
+            {% if role in ['Developer', 'Admin'] %}
             <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
                 <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                     <!-- New Tab Row 1: Program Sort -->
@@ -1584,7 +1584,7 @@
                     <option value="2nd Semester">2nd Semester</option>
                 </select>
 
-                {% if role in ['Developer', 'MISD', 'Admin'] %}
+                {% if role in ['Developer', 'Admin'] %}
                 <button class="btn-nav" onclick="setAsActiveTerm()" style="border-color:rgba(16,185,129,0.4); color:#34d399;" title="Set the selected Year & Semester as the active institutional term for all new posts">📌 Set Active Term</button>
                 <button class="btn-nav" onclick="openAddYearModal()" style="border-color:rgba(37,99,235,0.4); color:var(--txt-blue);">+ Add Year</button>
                 {% endif %}
@@ -1677,10 +1677,10 @@
                 <div class="panel-heading">
                     <span>Feedback Category Overview</span>
                     <span style="font-size:0.75rem; color:var(--text-muted);" id="currentDeptLabel">
-                        {% if role in ['Developer', 'MISD', 'Admin'] %}ALL PROGRAMS OVERVIEW{% else %}PROGRAM — {{ user_program }}{% endif %}
+                        {% if role in ['Developer', 'Admin'] %}ALL PROGRAMS OVERVIEW{% else %}PROGRAM — {{ user_program }}{% endif %}
                     </span>
                 </div>
-                <div class="charts-double" {% if role not in ['Developer', 'MISD', 'Admin'] %}style="grid-template-columns: 1fr 1fr; max-width: 860px; margin: 0 auto;"{% endif %}>
+                <div class="charts-double" {% if role not in ['Developer', 'Admin'] %}style="grid-template-columns: 1fr 1fr; max-width: 860px; margin: 0 auto;"{% endif %}>
                     <div class="chart-box">
                         <img id="pieChartImg" src="" alt="Polarity Doughnut Chart">
                     </div>
@@ -2053,7 +2053,7 @@
         let currentSource = "ALL";
         let binaryOnlyMode = false;
         let latestSummaryOverview = null;
-        const isDev = ["Developer", "MISD", "Admin"].includes(userRole);
+        const isDev = ["Developer", "Admin"].includes(userRole);
         
         let currentProgram = "ALL";
         let currentSentiment = "ALL";
@@ -2840,9 +2840,9 @@
                 if (item.human_sentiment) {
                     const aiOrig = item.ai_sentiment || item.sentiment;
                     if (item.human_sentiment === aiOrig) {
-                        polarityHtml += `<br><span class="badge badge-Verified" style="margin-top: 6px;" title="Verified by ${esc(item.verified_by || 'MISD')}">✓ Verified</span>`;
+                        polarityHtml += `<br><span class="badge badge-Verified" style="margin-top: 6px;" title="Verified by ${esc(item.verified_by || 'Developer')}">✓ Verified</span>`;
                     } else {
-                        polarityHtml += `<br><span class="badge badge-Overridden" style="margin-top: 6px;" title="Overridden by ${esc(item.verified_by || 'MISD')} (Original AI: ${esc(aiOrig)})">✏️ Overridden (AI: ${esc(aiOrig)})</span>`;
+                        polarityHtml += `<br><span class="badge badge-Overridden" style="margin-top: 6px;" title="Overridden by ${esc(item.verified_by || 'Developer')} (Original AI: ${esc(aiOrig)})">✏️ Overridden (AI: ${esc(aiOrig)})</span>`;
                     }
                 }
                 if (item.has_sarcasm) {
@@ -2938,9 +2938,9 @@
 
             const actionBox = document.getElementById('modalPrescriptiveAction');
             if (log.sentiment === 'Negative') {
-                actionBox.innerHTML = `<strong>Required Administrative Action:</strong> Elevated grievance detected in <strong>${esc(log.program)}</strong>. The Department Chair and General Services must review this feedback immediately, investigate classroom or laboratory conditions, and log an official resolution note in the portal.`;
+                actionBox.innerHTML = `<strong>Recommended Student Officer Action:</strong> Elevated grievance detected in <strong>${esc(log.program)}</strong>. DCI Student Officers and Class Representatives should review this concern, coordinate with the affected class section, and log an official resolution update (Under Review / Action Taken) in the Student Portal.`;
             } else if (log.sentiment === 'Positive') {
-                actionBox.innerHTML = `<strong>Institutional Recognition:</strong> Positive commendation recorded. Highlight this instructional delivery or facility standard during the next department meeting as a benchmark for institutional quality assurance.`;
+                actionBox.innerHTML = `<strong>Community Commendation:</strong> Positive student feedback recorded. Highlight this strong instructional, demeanor, or facility experience in the DCI Student Officer summary report.`;
             } else {
                 actionBox.innerHTML = `<strong>Informational Baseline:</strong> Neutral observation recorded. Monitor ongoing student engagement trends across this course section.`;
             }
@@ -2969,9 +2969,9 @@
                 if (resetBtn) resetBtn.style.display = 'inline-flex';
                 if (statusText) {
                     if (log.human_sentiment === aiOrig) {
-                        statusText.innerHTML = `<strong style="color:#34d399;">✓ Ground Truth Confirmed (${esc(log.human_sentiment)})</strong> — Matches original AI prediction (${esc(aiOrig)}). Verified by ${esc(log.verified_by || 'MISD')}.`;
+                        statusText.innerHTML = `<strong style="color:#34d399;">✓ Ground Truth Confirmed (${esc(log.human_sentiment)})</strong> — Matches original AI prediction (${esc(aiOrig)}). Verified by ${esc(log.verified_by || 'Developer')}.`;
                     } else {
-                        statusText.innerHTML = `<strong style="color:#60a5fa;">✏️ Overridden to ${esc(log.human_sentiment)}</strong> — Original AI prediction was <strong>${esc(aiOrig)}</strong>. Verified by ${esc(log.verified_by || 'MISD')}.`;
+                        statusText.innerHTML = `<strong style="color:#60a5fa;">✏️ Overridden to ${esc(log.human_sentiment)}</strong> — Original AI prediction was <strong>${esc(aiOrig)}</strong>. Verified by ${esc(log.verified_by || 'Developer')}.`;
                     }
                 }
             } else {
@@ -3571,7 +3571,7 @@
         });
         initLxSidebar();
 
-        const DEV_ROLES = ['Developer', 'MISD', 'Admin'];
+        const DEV_ROLES = ['Developer', 'Admin'];
         const TOUR_ALL_STEPS = [
             { title: "Welcome to LexiMetrix Analytics", body: "This workspace converts English, Tagalog, and Taglish student feedback into quantitative metrics, aspect breakdowns, and explainable AI insights. Let's take a quick tour of the updated layout!" },
             { target: "#lxSidebarToggleBtn", title: "1. Toggleable Quick Workspace Menu", body: "Click this <strong>☰ Quick Workspace button</strong> (or press <code>Alt + S</code>) anytime to slide open your workspace drawer—giving you 100% uncluttered screen space by default, with a 📌 Pin option if you ever want it docked!" },
