@@ -274,6 +274,150 @@
     .fb-pill-select { width: 100%; font-size: 0.82rem; padding: 7px 10px; }
 }
 
+
+/* ==========================================================================
+   PATCH: NATIVE SELECT DROPDOWN VISIBILITY FIX (DARK & LIGHT MODE)
+   Fixes invisible white-on-gray <option> text in Create Post & all dropdowns
+   ========================================================================== */
+:root, html[data-theme="dark"] {
+    color-scheme: dark;
+}
+select, .fb-pill-select, .select-input {
+    color-scheme: dark;
+}
+.fb-pill-select {
+    background-color: #13203b !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+select option, .fb-pill-select option, .select-input option {
+    background-color: #0f1a30 !important;
+    color: #f8fafc !important;
+    font-weight: 600;
+    padding: 8px 12px;
+}
+
+/* ==========================================================================
+   PATCH: EYE-FRIENDLY SOFT GRAYISH-WHITE LIGHT MODE (ANTI-GLARE PALETTE)
+   Replaces blinding #ffffff with soothing cool alabaster / slate gray tones
+   ========================================================================== */
+html[data-theme="light"], [data-theme="light"] {
+    color-scheme: light;
+    --bg-base: #dce3ec !important;
+    --bg-card: rgba(233, 238, 245, 0.94) !important;
+    --bg-card-hover: rgba(239, 243, 248, 0.98) !important;
+    --bg-input: #dfe6f0 !important;
+    --border-subtle: rgba(15, 23, 42, 0.13) !important;
+    --border-highlight: rgba(15, 23, 42, 0.22) !important;
+    --text-heading: #0f172a !important;
+    --text-body: #273449 !important;
+    --text-muted: #475569 !important;
+}
+[data-theme="light"] body {
+    background-color: #dce3ec !important;
+    background-image:
+        radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 90% 15%, rgba(245, 158, 11, 0.05) 0%, transparent 35%),
+        radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 45%) !important;
+}
+[data-theme="light"] .topbar {
+    background: rgba(226, 232, 240, 0.92) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+[data-theme="light"] .portal-sidebar {
+    background: rgba(231, 236, 244, 0.95) !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+[data-theme="light"] .welcome-card {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.10) 0%, rgba(231, 236, 244, 0.96) 100%) !important;
+}
+[data-theme="light"] .community-pulse-card,
+[data-theme="light"] .townhall-compose-card,
+[data-theme="light"] .post-card,
+[data-theme="light"] .form-card {
+    background: rgba(233, 238, 245, 0.94) !important;
+    border-color: rgba(15, 23, 42, 0.13) !important;
+    box-shadow: 0 8px 22px -10px rgba(15, 23, 42, 0.12) !important;
+}
+[data-theme="light"] .post-card:hover,
+[data-theme="light"] .form-card:hover {
+    background: rgba(239, 243, 248, 0.98) !important;
+}
+[data-theme="light"] .pulse-stat-box,
+[data-theme="light"] .sidebar-privacy-box,
+[data-theme="light"] .comment-item,
+[data-theme="light"] .q-card-item,
+[data-theme="light"] .fill-q-card {
+    background: #dfe6f0 !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+[data-theme="light"] .modal-card,
+[data-theme="light"] .modal-sheet,
+[data-theme="light"] .modal-card.fb-compose-modal-card,
+[data-theme="light"] .sys-alert-card {
+    background: #e6ecf4 !important;
+    border-color: rgba(15, 23, 42, 0.16) !important;
+}
+[data-theme="light"] .fb-modal-header {
+    background: rgba(15, 23, 42, 0.03) !important;
+}
+[data-theme="light"] .fb-compose-pill-btn {
+    background: #dfe6f0 !important;
+    border-color: rgba(15, 23, 42, 0.14) !important;
+    color: #334155 !important;
+}
+[data-theme="light"] .fb-compose-pill-btn:hover {
+    background: #d5deeb !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] .fb-post-textarea,
+[data-theme="light"] .fb-attach-input,
+[data-theme="light"] .select-input,
+[data-theme="light"] .textarea-input,
+[data-theme="light"] .text-input,
+[data-theme="light"] .search-input-box input,
+[data-theme="light"] .comment-input {
+    background: #dfe6f0 !important;
+    border-color: rgba(15, 23, 42, 0.15) !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] .fb-post-textarea:focus,
+[data-theme="light"] .fb-attach-input:focus,
+[data-theme="light"] .select-input:focus,
+[data-theme="light"] .textarea-input:focus,
+[data-theme="light"] .text-input:focus,
+[data-theme="light"] .search-input-box input:focus {
+    background: #e9eef5 !important;
+    border-color: #2563eb !important;
+}
+[data-theme="light"] .fb-attach-card,
+[data-theme="light"] .fb-attach-card.image-drop-container {
+    background: #dfe6f0 !important;
+    border-color: rgba(15, 23, 42, 0.18) !important;
+}
+[data-theme="light"] select,
+[data-theme="light"] .fb-pill-select,
+[data-theme="light"] .select-input {
+    color-scheme: light;
+    background-color: #d8e1ed !important;
+    color: #0f172a !important;
+    border-color: rgba(15, 23, 42, 0.18) !important;
+}
+[data-theme="light"] select option,
+[data-theme="light"] .fb-pill-select option,
+[data-theme="light"] .select-input option {
+    background-color: #e6ecf4 !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] .splash-curtain,
+[data-theme="light"] .farewell-screen {
+    background: radial-gradient(circle at center, #e6ecf4 0%, #dce3ec 70%, #cfd8e4 100%) !important;
+}
+html[data-theme="light"] body #toast {
+    background: #e6ecf4 !important;
+    color: #0f172a !important;
+}
+
     </style>
 
 </head>
