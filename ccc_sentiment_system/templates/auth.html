@@ -591,13 +591,12 @@
             }
         }
 
-        // Hardlocked exactly to DCI Programs and MISD empty
+        // Hardlocked strictly to DCI Programs (BSCS & BSIT)
         const programsByDept = {
             "DCI": [
                 "Bachelor of Science in Computer Science (BSCS)",
                 "Bachelor of Science in Information Technology (BSIT)"
-            ],
-            "MISD": []
+            ]
         };
 
         function onDepartmentChanged() {
@@ -605,13 +604,10 @@
             const roleGroup = document.getElementById('roleGroup');
             const roleSelect = document.getElementById('roleSelect');
 
-            if (dept === 'MISD') {
-                roleGroup.style.display = 'none';
-            } else {
-                roleGroup.style.display = 'block';
+            roleGroup.style.display = 'block';
                 if (roleSelect.value === 'MISD') {
                     roleSelect.value = 'Student - Regular';
-                }
+                
             }
 
             const container = document.getElementById('programSelectsContainer');
@@ -628,12 +624,8 @@
             const addBtn = document.getElementById('btnAddCourse');
             const container = document.getElementById('programSelectsContainer');
 
-            if (dept === 'MISD') {
-                progGroup.style.display = 'none';
-                return;
-            } else {
-                progGroup.style.display = 'block';
-            }
+            progGroup.style.display = 'block';
+            
 
             const isStudent = role.startsWith('Student');
 
@@ -668,7 +660,7 @@
             const addBtn = document.getElementById('btnAddCourse');
             const isStudent = role.startsWith('Student');
 
-            if (dept === 'MISD') return;
+            
 
             const currentSelections = [];
             selects.forEach(s => currentSelections.push(s.value));
@@ -705,7 +697,7 @@
         function addProgramDropdown() {
             const dept = document.getElementById('deptSelect').value;
             const role = document.getElementById('roleSelect').value;
-            if (dept === 'MISD') return;
+            
 
             const container = document.getElementById('programSelectsContainer');
             const isStudent = role.startsWith('Student');
