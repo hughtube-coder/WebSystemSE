@@ -845,6 +845,81 @@
             }
         }
 
+
+        /* ===== PATCH: SELECT DROPDOWN VISIBILITY & SOFT GRAYISH-WHITE LIGHT MODE ===== */
+        :root, html[data-theme="dark"] { color-scheme: dark; }
+        select, .term-select, .select-input { color-scheme: dark; }
+        select option, .term-select option, .select-input option {
+            background-color: #0f1a30 !important;
+            color: #f8fafc !important;
+            font-weight: 600;
+        }
+
+        html[data-theme="light"] {
+            color-scheme: light;
+            --surface-ground: #dce3ec !important;
+            --surface-card: rgba(233, 238, 245, 0.94) !important;
+            --surface-card-hover: #eef2f7 !important;
+            --text-title: #0f172a !important;
+            --text-body: #273449 !important;
+            --text-muted: #475569 !important;
+            --border-light: rgba(15, 23, 42, 0.13) !important;
+        }
+        html[data-theme="light"] body { background: #dce3ec !important; }
+        html[data-theme="light"] .topbar { background: rgba(226, 232, 240, 0.92) !important; box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08) !important; }
+        html[data-theme="light"] .lx-sidebar { background: rgba(229, 235, 243, 0.96) !important; border-right-color: rgba(15, 23, 42, 0.14) !important; }
+        html[data-theme="light"] .dept-filter-bar { background: rgba(226, 232, 240, 0.88) !important; }
+        html[data-theme="light"] .term-select,
+        html[data-theme="light"] .select-input,
+        html[data-theme="light"] .textarea-input,
+        html[data-theme="light"] .search-input-box input,
+        html[data-theme="light"] .btn-page {
+            color-scheme: light;
+            background: #dfe6f0 !important;
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.15) !important;
+        }
+        html[data-theme="light"] select option,
+        html[data-theme="light"] .term-select option,
+        html[data-theme="light"] .select-input option {
+            background-color: #e6ecf4 !important;
+            color: #0f172a !important;
+        }
+        html[data-theme="light"] .kpi-card {
+            background: linear-gradient(180deg, #e9eef5 0%, #dfe6f0 100%) !important;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08) !important;
+        }
+        html[data-theme="light"] .kpi-card:hover {
+            background: linear-gradient(180deg, #eef2f7 0%, #e4ebf3 100%) !important;
+        }
+        html[data-theme="light"] .panel {
+            background: rgba(233, 238, 245, 0.94) !important;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07) !important;
+        }
+        html[data-theme="light"] #overviewNarrativeBox,
+        html[data-theme="light"] .override-box,
+        html[data-theme="light"] .eval-kpi-card,
+        html[data-theme="light"] .cm-cell,
+        html[data-theme="light"] .csv-stat {
+            background: #dfe6f0 !important;
+        }
+        html[data-theme="light"] .table-responsive { background: #e4ebf3 !important; }
+        html[data-theme="light"] th { background: #d5deeb !important; color: #1e293b !important; }
+        html[data-theme="light"] .modal-card,
+        html[data-theme="light"] .modal-sheet,
+        html[data-theme="light"] .sys-alert-card {
+            background: #e6ecf4 !important;
+            border-color: rgba(15, 23, 42, 0.16) !important;
+        }
+        html[data-theme="light"] .splash-curtain,
+        html[data-theme="light"] .farewell-screen {
+            background: radial-gradient(circle at center, #e6ecf4 0%, #dce3ec 70%, #cfd8e4 100%) !important;
+        }
+        html[data-theme="light"] body #toast {
+            background: #e6ecf4 !important;
+            color: #0f172a !important;
+        }
+
     </style>
 </head>
 <body>
