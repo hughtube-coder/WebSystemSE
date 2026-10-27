@@ -2600,36 +2600,44 @@ function _showSurveyListPane() {
     if (mine && mine.style.display !== 'none') toggleAuthoredSurveys();
 }
 function _parentOf(id) { const el = document.getElementById(id); return el ? el.parentElement : null; }
+function _ensureComposeClosed() {
+    const m = document.getElementById('townComposeModal');
+    if (m && m.classList.contains('modal-open')) closeComposeModal();
+}
+function _openComposeForTour() {
+    _showSurveyListPane();
+    switchPortalTab('townhall');
+    openComposeModal();
+}
 function buildStudentTourSteps() {
-    const goTownHall = () => { _showSurveyListPane(); switchPortalTab('townhall'); };
-    const goSurveys = () => { switchPortalTab('surveys'); _showSurveyListPane(); };
+    const goTownHall = () => { _ensureComposeClosed(); _showSurveyListPane(); switchPortalTab('townhall'); };
+    const goSurveys = () => { _ensureComposeClosed(); switchPortalTab('surveys'); _showSurveyListPane(); };
     const steps = [
-        { title: "Welcome to your Voice Collective", body: "This is your safe space to share feedback and help improve our campus. There are two main areas: the <strong>Town Hall</strong> for open discussions, and <strong>Formal Surveys</strong> for school evaluations. " + (isAuthorizedAnnouncer ? "As a student officer or representative, you also get extra tools to post announcements and create surveys." : "(On a phone? You can also swipe left or right on this card!)") },
-        { target: '#pulseSectionTarget', before: goTownHall, title: "Department Pulse", body: "A quick look at how students in our department are feeling right now: how many voices were recorded and the mix of positive, neutral, and negative feedback." },
-        { target: '#tabTownHall', before: goTownHall, title: "Town Hall Forum", body: "Open the menu (☰ on phones) to visit the <strong>Town Hall</strong>, where you can read what classmates are talking about and share your own thoughts." },
-        { target: '#sidebarChannelsSection', title: "Channels", body: "Switch between <strong>🏛️ Campus-Wide</strong> posts, official <strong>📣 Announcements</strong>, and our own <strong>💻 DCI Channel</strong>." },
-        { target: '.sidebar-privacy-box', title: "Your Privacy is Protected", body: "Everything you post or answer is <strong>100% anonymous</strong>. Your name is never shown, and if someone accidentally types a phone number, email, or student ID, the system hides it automatically." },
-        { target: () => document.getElementById('townhallComposeCard') || _parentOf('townContent'), before: goTownHall, title: "Share Your Voice", body: "Write your idea, concern, or praise in English, Tagalog, or Taglish, pick a category, and post. You can also tick the preview box before posting to see how the AI reads your message." },
+        { before: goTownHall, title: "Welcome to your Voice Collective", body: "This is your standalone student space to share honest feedback and help improve our department. There are two main areas: the <strong>Town Hall Forum</strong> for open discussions, and <strong>Formal Surveys</strong> for structured evaluations. " + (isAuthorizedAnnouncer ? "As a student officer or representative, you also get extra tools to broadcast announcements, post resolutions, create surveys, and view program analytics." : "(On a phone? You can also swipe left or right on this card!)") },
+        { target: '#pulseSectionTarget', before: goTownHall, title: "Department Community Pulse", body: "A live snapshot of how BSCS and BSIT students in DCI are feeling right now: total voices recorded, active surveys, and the real-time mix of positive commendations, neutral remarks, and actionable grievances." },
+        { target: '#tabTownHall', before: goTownHall, title: "Town Hall Forum", body: "Open the navigation menu (☰ on phones) to visit the <strong>Town Hall Forum</strong>, where you can read what classmates are talking about and share your own thoughts." },
+        { target: '#sidebarChannelsSection', before: goTownHall, title: "Community Channels", body: "Switch between <strong>🏛️ Campus-Wide</strong> posts, official <strong>📣 Announcements</strong>, and our dedicated <strong>💻 DCI Channel</strong>." },
+        { target: '.sidebar-privacy-box', before: goTownHall, title: "100% Anonymous & Privacy-Protected", body: "Everything you post or answer is <strong>100% anonymous</strong> under RA 10173. Your account is never linked to your feedback, personal details (names, phone numbers, emails, student IDs) are hidden automatically, and profanity is masked with asterisks (<code>***</code>)." },
+        { target: () => document.getElementById('townhallComposeCard') || _parentOf('townContent'), before: goTownHall, title: "Share Your Voice (Quick Composer)", body: "Tap <strong>&ldquo;What's on your mind?&rdquo;</strong> or any quick-action button below it—<strong>🖼️ Photo / Image</strong>, <strong>🔗 Reference Link</strong>, or <strong>🔬 AI Sentiment Check</strong>—to pop open the full post creator." },
+        { target: () => document.querySelector('#townComposeModal .fb-compose-modal-card') || document.getElementById('townhallComposeCard'), before: _openComposeForTour, delay: 220, title: "Inside 'Create Post' & Pre-Flight AI Check", body: "Choose a channel and category pill at the top, write your feedback in <strong>English, Tagalog, or Taglish</strong> (even campus slang like <em>&ldquo;eme&rdquo;</em> or <em>&ldquo;charot&rdquo;</em>!), attach a photo or link, and flip the <strong>🔬 Preview AI Analysis</strong> switch to see how the AI scores your message before you post." },
     ];
-    if (isAuthorizedAnnouncer) steps.push({ target: () => { const c = document.getElementById('townIsAnnouncement'); return (c && c.closest('div')) || document.getElementById('townhallComposeCard'); }, before: goTownHall, title: "Post Announcements & Updates", body: "As a student officer or representative, you can tick <strong>Official Announcement</strong> to pin important news at the top, or post an <strong>Action Taken</strong> update on a student concern." });
+    if (isAuthorizedAnnouncer) steps.push({ target: () => document.getElementById('townComposeAnnounceChip') || document.getElementById('townhallComposeCard'), before: goTownHall, title: "Broadcast Announcements & Resolutions", body: "As a student officer or representative, tap <strong>📌 Official Broadcast</strong> to pin an announcement (with an optional auto-expiration date), or click <strong>✍ Post Resolution</strong> on any student post to mark it <em>Under Review</em> or <em>Action Taken</em>." });
     steps.push(
-        { target: () => document.querySelector('#townhallFeedContainer .comments-toggle-btn') || document.querySelector('#townhallFeedContainer .post-card') || document.getElementById('townhallFeedContainer'), before: goTownHall, title: "Vote & Join the Conversation", body: "Use the <strong>▲ ▼ arrows</strong> to agree or disagree so important topics rise to the top, and tap <strong>Join the discussion</strong> to read or write anonymous comments." },
-        { target: '#feedSearchInput', before: goTownHall, title: "Search Posts", body: "Looking for a specific topic, room, or subject? Type any word here to filter the posts right away." },
-        { target: '#tabSurveys', before: goSurveys, title: "Formal Surveys", body: "Switch to <strong>📋 Formal Surveys</strong> to answer official evaluations from your student officers and department representatives. Your answers stay completely anonymous." },
-        { target: '#surveyCategoryTabs', before: goSurveys, title: "Track Your Surveys", body: "<strong>Available</strong> shows surveys you can answer now. <strong>Due Today</strong> closes tonight, <strong>Missed</strong> shows past deadlines, and <strong>Completed</strong> lists the ones you already finished." },
-        { target: '#formSearchInput', before: goSurveys, title: "Find & Answer a Survey", body: "Type a title or subject code to find a survey quickly, then tap <strong>Fill Out Evaluation</strong> to send your ratings and comments." }
+        { target: () => document.querySelector('#townhallFeedContainer .comments-toggle-btn') || document.querySelector('#townhallFeedContainer .post-card') || document.getElementById('townhallFeedContainer'), before: goTownHall, title: "Vote, Paginated Comments & Post Controls", body: "Use the <strong>▲ ▼ arrows</strong> to vote on concerns, react with <strong>👍 / 👎</strong> on official resolution updates, and tap <strong>Join the discussion</strong> to browse <strong>paginated replies (5 per page)</strong>. You can also <strong>✏️ Edit</strong> or <strong>🗑️ Delete</strong> your own posts anytime." },
+        { target: '#feedSearchInput', before: goTownHall, title: "Search Discussions", body: "Looking for a specific topic, laboratory room, or subject? Type any keyword here to filter the Town Hall feed right away." },
+        { target: '#tabSurveys', before: goSurveys, title: "Formal Surveys", body: "Switch to <strong>📋 Formal Surveys</strong> to answer structured evaluations created by your student officers and representatives. All responses remain 100% anonymous." },
+        { target: '#surveyCategoryTabs', before: goSurveys, title: "Track Your Surveys", body: "<strong>🗳️ Available</strong> shows open surveys you can answer now. <strong>⚠️ Due Today</strong> closes tonight, <strong>❌ Missed</strong> shows past deadlines, and <strong>✅ Completed</strong> lists the ones you already finished." },
+        { target: '#formSearchInput', before: goSurveys, title: "Find & Answer a Survey", body: "Search by title or subject code, then tap <strong>Fill Out Evaluation</strong> to submit star ratings (with follow-up prompts on low ratings), choices, and open comments." }
     );
     if (isAuthorizedAnnouncer) steps.push(
-        { target: '#createSurveyBtn', before: goSurveys, title: "Create a Survey", body: "Build your own survey with star ratings (1 to 5), multiple-choice, and written questions. You can also pick colors, add a header picture, and set a deadline or response limit." },
-        { target: '#btnToggleAuthored', before: goSurveys, title: "Manage Your Surveys", body: "Open <strong>Surveys You Created</strong> to edit your survey, copy a share link to send to classmates, view the results, or download the answers as a spreadsheet (CSV)." }
-    );
-    if (document.querySelector('.lx-floating-dash-pill')) steps.push(
-        { target: '.lx-floating-dash-pill', title: "Back to Analytics Dashboard", body: "Use <strong>📊 Back to Analytics Dashboard</strong> in the bottom-left corner anytime to return to the evaluation dashboard." }
+        { target: '#createSurveyBtn', before: goSurveys, title: "Create Custom Surveys", body: "Build targeted surveys with Likert (1–5) scales, conditional follow-up prompts, multiple-choice items, and open text questions—complete with custom theme colors, header banners, deadlines, and response quotas." },
+        { target: '#btnToggleAuthored', before: goSurveys, title: "Manage, Share & Delete Your Surveys", body: "Every survey you create includes quick buttons for <strong>📊 Results</strong>, <strong>✏️ Edit</strong>, <strong>🔗 Copy Link</strong>, and <strong>🗑️ Delete</strong> directly on the card or inside the <strong>Surveys You Created</strong> manager." },
+        { target: () => document.querySelector('.lx-floating-dash-pill') || document.getElementById('topbarLogoImg'), before: goTownHall, title: "Back to Analytics Dashboard", body: "Use the floating <strong>📊 Back to Analytics Dashboard</strong> pill in the bottom-left corner anytime to switch back to the quantitative analytics workspace." }
     );
     steps.push(
-        { target: '#themeToggle', title: "Light or Dark Mode", body: "Switch between dark and light mode anytime. The portal remembers what you prefer." },
-        { target: '.btn-logout', title: "Sign Out Safely", body: "You stay signed in until you tap <strong>Sign Out</strong>, so always sign out when using a shared or computer lab PC." },
-        { title: "You're All Set!", body: "Explore at your own pace. You can replay this guide anytime using the <strong>❓ Tour</strong> button at the top." }
+        { target: '#themeToggle', before: goTownHall, title: "Soft Anti-Glare Light & Dark Mode", body: "Switch between dark mode and our eye-friendly soft-slate light mode anytime. The portal remembers your preference." },
+        { target: '.btn-logout', before: goTownHall, title: "Sign Out Safely", body: "Your session stays locked while you are signed in, so always tap <strong>Sign Out</strong> when using a shared or laboratory PC." },
+        { before: goTownHall, title: "You're All Set!", body: "Explore at your own pace. You can replay this interactive guide anytime using the <strong>❓ Tour</strong> button in the top bar." }
     );
     return steps;
 }
@@ -2640,7 +2648,7 @@ CCCTour.configure({
     userName: window.APP_USERNAME || '',
     csrf: CSRF_TOKEN,
     seenEndpoint: '/api/tutorial/seen',
-    onEnd: () => { try { _showSurveyListPane(); switchPortalTab('townhall'); } catch (e) { /* ignore */ } }
+    onEnd: () => { try { _ensureComposeClosed(); _showSurveyListPane(); switchPortalTab('townhall'); } catch (e) { /* ignore */ } }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
