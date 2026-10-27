@@ -320,7 +320,7 @@ function runSplash(initialLoad) {
 const currentUserRole = window.APP_USER_ROLE || 'Student - Regular';
 const currentUserDept = window.APP_USER_DEPT || 'DCI';
 const roleLower = currentUserRole.toLowerCase();
-const isAuthorizedAnnouncer = roleLower.includes('officer') || roleLower.includes('representative') || roleLower.includes('rep') || roleLower.includes('developer') || roleLower.includes('misd');
+const isAuthorizedAnnouncer = roleLower.includes('officer') || roleLower.includes('representative') || roleLower.includes('rep') || roleLower.includes('developer');
 
 let activeChannel = "ALL";
 let activeFormUnderFill = null;
@@ -1441,7 +1441,7 @@ function surveyCardHTML(f, st) {
     const canManage = Boolean(
         f.can_manage ||
         (window.APP_USERNAME && f.created_by_name === window.APP_USERNAME) ||
-        ['developer', 'misd', 'admin'].includes(roleLower)
+        ['developer', 'admin'].includes(roleLower)
     );
     const manageBar = canManage ? `
         <div class="sv-actions" style="margin-top: 8px;">
@@ -2173,7 +2173,7 @@ function _syncCommentButton(postId, open, count) {
 const COMMENTS_PER_PAGE = 5;
 const postCommentsCache = {};
 const postCommentsPage = {};
-const isDevModerator = ['developer', 'misd', 'admin'].includes(roleLower);
+const isDevModerator = ['developer', 'admin'].includes(roleLower);
 
 function renderPaginatedComments(postId, page) {
     const list = document.getElementById(`commentsList_${postId}`);
