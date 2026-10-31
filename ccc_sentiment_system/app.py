@@ -3136,10 +3136,15 @@ def get_custom_summary():
         return vals[:limit]
 
     programs = [p.upper() for p in _multi('program')]
+    allowed_progs = _allowed_programs_for_user()
+    if allowed_progs is not None:
+        programs = [p for p in programs if p in allowed_progs] or list(allowed_progs)
     years = _multi('year')
     sems = _multi('semester')
     sentiments = [x.lower() for x in _multi('sentiment') if x.lower() in ('positive', 'negative', 'neutral')]
     sources = _multi('source')
+    if not _is_dev():
+        sources = [s for s in sources if s != 'Testing']
     aspects = [a for a in _multi('aspect') if a in CUSTOM_SUMMARY_ASPECTS]
 
     query = Feedback.query.filter_by(department="DCI")
