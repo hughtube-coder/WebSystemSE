@@ -2719,7 +2719,7 @@
 
         async function fetchKeywordCloud(prog, sent, year, sem) {
             try {
-                const res = await apiFetch(`/api/analytics/keywords?program=${encodeURIComponent(prog)}&sentiment=${encodeURIComponent(sent)}&year=${encodeURIComponent(year)}&semester=${encodeURIComponent(sem)}&source=${encodeURIComponent(currentSource)}`);
+                const res = await apiFetch(`/api/analytics/keywords?program=${encodeURIComponent(prog)}&sentiment=${encodeURIComponent(sent)}&year=${encodeURIComponent(year)}&semester=${encodeURIComponent(sem)}&source=${encodeURIComponent(currentSource)}&binary=${binaryOnlyMode ? '1' : '0'}`);
                 const data = await readJson(res, "Could not load data.");
                 const container = document.getElementById('keywordCloudContainer');
                 if (!container) return;
@@ -3519,7 +3519,7 @@
             const semElem = document.getElementById('filterSem');
             const year = (yearElem && yearElem.value) ? yearElem.value : 'ALL';
             const sem = (semElem && semElem.value) ? semElem.value : 'ALL';
-            downloadFile(`/api/export_csv?program=${encodeURIComponent(currentProgram)}&sentiment=${encodeURIComponent(currentSentiment)}&year=${encodeURIComponent(year)}&semester=${encodeURIComponent(sem)}&source=${encodeURIComponent(currentSource)}`, 'dci_sentiment_export.csv');
+            downloadFile(`/api/export_csv?program=${encodeURIComponent(currentProgram)}&sentiment=${encodeURIComponent(currentSentiment)}&year=${encodeURIComponent(year)}&semester=${encodeURIComponent(sem)}&source=${encodeURIComponent(currentSource)}&binary=${binaryOnlyMode ? '1' : '0'}`, 'dci_sentiment_export.csv');
         }
 
         // ==========================================================
