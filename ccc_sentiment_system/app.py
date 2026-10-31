@@ -1325,7 +1325,7 @@ def login():
     if request.method == 'POST':
         login_id = request.form.get('username', '').strip()
         password_input = request.form.get('password', '')
-        user = User.query.filter((User.username == login_id) | (User.email == login_id.lower())).first()
+        user = User.query.filter((func.lower(User.username) == login_id.lower()) | (func.lower(User.email) == login_id.lower())).first()
 
         if user:
             now = datetime.utcnow()
@@ -1394,7 +1394,7 @@ def forgot_password():
         if not identifier:
             return render_template('auth.html', error="Please enter your institutional email or username.", mode="forgot")
 
-        user = User.query.filter((User.username == identifier) | (User.email == identifier.lower())).first()
+        user = User.query.filter((func.lower(User.username) == identifier.lower()) | (func.lower(User.email) == identifier.lower())).first()
         if not user:
             return render_template('auth.html', error="No account matched that username or email address.", mode="forgot")
 
@@ -1487,7 +1487,6 @@ def open_shared_form(token):
         session['pending_share'] = token
         flash("Please sign in to open the survey you were sent.")
         return redirect(url_for('login'))
-    if not _is_student(): return redirect(url_for('dashboard'))
     form = EvaluationForm.query.filter_by(share_token=token, is_active=True).first()
     return redirect(url_for('student_portal', survey=(form.id if form else 'unavailable')))
 
@@ -1829,7 +1828,7 @@ def student_portal():
 @login_required
 @api_guard
 def get_community_pulse():
-    q = Feedback.query.filter_by(department='DCI')
+    q = Feedback.query.filter(Feedback.department == 'DCI', Feedback.source != 'Testing')
     by_sent = dict(q.with_entities(func.lower(Feedback.sentiment), func.count()).group_by(func.lower(Feedback.sentiment)).all())
     
     pos = by_sent.get('positive', 0); neg = by_sent.get('negative', 0); neu = by_sent.get('neutral', 0)
@@ -2879,7 +2878,14 @@ def _build_why_explanation(entry, parsed_aspects, has_sarcasm):
 
 def _compute_total_summary(all_matching, aspect_counts):
     """Builds the comprehensive Total Summary across all responses (both current filter scope and grand institutional totals)."""
-    all_db = Feedback.query.filter_by(department="DCI").all()
+    base_q = Feedback.query.filter_by(department="DCI")
+    if not _is_dev():
+        base_q = base_q.filter(Feedback.source != "Testing")
+        allowed_p = _allowed_programs_for_user()
+        if allowed_p:
+            from sqlalchemy import or_
+            base_q = base_q.filter(or_(*[Feedback.program.ilike(f"%{p}%") for p in allowed_p]))
+    all_db = base_q.all()
     grand_total = len(all_db)
     grand_pos = sum(1 for r in all_db if str(r.sentiment).strip().lower() == "positive")
     grand_neg = sum(1 for r in all_db if str(r.sentiment).strip().lower() == "negative")
@@ -2894,7 +2900,7 @@ def _compute_total_summary(all_matching, aspect_counts):
         "Campus Facilities & Infrastructure": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
     }
 
-    dataset_for_breakdown = all_matching if all_matching else all_db
+    dataset_for_breakdown = list(all_matching)
     for r in all_db:
         src_k = r.source or "Portal"
         if src_k not in by_source:
@@ -3238,11 +3244,25 @@ def get_analytics_keywords():
     sem = request.args.get('semester', 'ALL').strip()
     source_filter = request.args.get('source', 'Portal').strip()
 
+    exclude_neutral = request.args.get('binary', '0').strip() == '1'
     query = Feedback.query.filter_by(department="DCI")
-    if prog != 'ALL': query = query.filter(Feedback.program.ilike(f"%{prog}%"))
-    if sent != 'All': query = query.filter(func.lower(Feedback.sentiment) == sent.lower())
+    allowed_progs = _allowed_programs_for_user()
+    if allowed_progs is not None:
+        from sqlalchemy import or_
+        if prog in allowed_progs:
+            query = query.filter(Feedback.program.ilike(f"%{prog}%"))
+        else:
+            query = query.filter(or_(*[Feedback.program.ilike(f"%{p}%") for p in allowed_progs]))
+    elif prog != 'ALL':
+        query = query.filter(Feedback.program.ilike(f"%{prog}%"))
+    if exclude_neutral:
+        query = query.filter(func.lower(Feedback.sentiment).in_(['positive', 'negative']))
+    elif sent != 'All':
+        query = query.filter(func.lower(Feedback.sentiment) == sent.lower())
     if yr != 'ALL': query = query.filter_by(academic_year=yr)
     if sem != 'ALL': query = query.filter_by(semester=sem)
+    if not _is_dev() and source_filter == 'Testing': source_filter = 'ALL'
+    if not _is_dev(): query = query.filter(Feedback.source != 'Testing')
     if source_filter != 'ALL': query = query.filter_by(source=source_filter)
 
     stop_words = {"ang", "mga", "ng", "sa", "na", "ay", "at", "ito", "pa", "ko", "mo", "nya", "ni", "pero", "kaso", "din", "rin", "ba", "lang", "naman", "ka", "kaya", "kasi", "mismo", "the", "and", "to", "a", "of", "in", "for", "is", "on", "that", "by", "this", "with", "i", "you", "it", "not", "or", "be", "are", "from", "at", "as", "your", "all", "have", "more", "was", "we", "they", "an", "so", "up", "out", "if", "about", "who", "get", "which", "para", "kung", "dahil", "kaming", "kami", "sila", "nila", "namin", "kanila", "aking", "ung", "yung", "nong", "nung", "may", "meron", "lahat", "naging", "mas", "wag", "daw", "raw"}
@@ -3725,11 +3745,25 @@ def export_csv():
     sem = request.args.get('semester', 'ALL').strip()
     source_filter = request.args.get('source', 'Portal').strip()
 
+    exclude_neutral = request.args.get('binary', '0').strip() == '1'
     query = Feedback.query.filter_by(department="DCI")
-    if prog != 'ALL': query = query.filter(Feedback.program.ilike(f"%{prog}%"))
-    if sent != 'All': query = query.filter(func.lower(Feedback.sentiment) == sent.lower())
+    allowed_progs = _allowed_programs_for_user()
+    if allowed_progs is not None:
+        from sqlalchemy import or_
+        if prog in allowed_progs:
+            query = query.filter(Feedback.program.ilike(f"%{prog}%"))
+        else:
+            query = query.filter(or_(*[Feedback.program.ilike(f"%{p}%") for p in allowed_progs]))
+    elif prog != 'ALL':
+        query = query.filter(Feedback.program.ilike(f"%{prog}%"))
+    if exclude_neutral:
+        query = query.filter(func.lower(Feedback.sentiment).in_(['positive', 'negative']))
+    elif sent != 'All':
+        query = query.filter(func.lower(Feedback.sentiment) == sent.lower())
     if yr != 'ALL': query = query.filter_by(academic_year=yr)
     if sem != 'ALL': query = query.filter_by(semester=sem)
+    if not _is_dev() and source_filter == 'Testing': source_filter = 'ALL'
+    if not _is_dev(): query = query.filter(Feedback.source != 'Testing')
     if source_filter != 'ALL': query = query.filter_by(source=source_filter)
 
     output = io.StringIO()
