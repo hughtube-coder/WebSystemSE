@@ -1230,21 +1230,35 @@ def signup():
         if selected_role not in ("Student - Regular", "Student - Officer"):
             selected_role = "Student - Regular"
 
-        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
+        by_user = User.query.filter(func.lower(User.username) == username.lower()).first()
+        by_email = User.query.filter(func.lower(User.email) == email.lower()).first()
+
+        if by_user and by_user.is_verified:
+            return render_template('auth.html', error="Username taken.", mode="signup")
+        if by_email and by_email.is_verified:
+            return render_template('auth.html', error="Email already registered.", mode="signup")
+
+        existing_user = by_user or by_email
         if existing_user:
-            if not existing_user.is_verified:
-                session['pending_verification_email'] = existing_user.email
-                existing_user.role = selected_role
-                existing_user.program = ", ".join(cleaned_programs) if cleaned_programs else "General"
-                existing_user.set_password(password)
-                existing_user.privacy_consent_at = datetime.utcnow()
-                flash("An uncompleted registration exists. Enter your new verification code below.")
-                code = issue_otp(existing_user)
-                db.session.commit()
-                _mail_pool.submit(send_verification_email, existing_user.email, code, existing_user.username)
-                return render_template('auth.html', mode="verify", email=existing_user.email, dev_code=None)
-            err = "Username taken." if existing_user.username == username else "Email already registered."
-            return render_template('auth.html', error=err, mode="signup")
+            # If two separate unverified rows matched (one by username, one by email), remove the stale duplicate first
+            if by_user and by_email and by_user.id != by_email.id:
+                db.session.delete(by_email)
+                db.session.flush()
+                existing_user = by_user
+
+            existing_user.username = username
+            existing_user.email = email
+            existing_user.department = department
+            existing_user.role = selected_role
+            existing_user.program = ", ".join(cleaned_programs) if cleaned_programs else "General"
+            existing_user.set_password(password)
+            existing_user.privacy_consent_at = datetime.utcnow()
+            session['pending_verification_email'] = existing_user.email
+            flash("Registration details updated! Enter the new 6-digit verification code sent to your email.")
+            code = issue_otp(existing_user)
+            db.session.commit()
+            _mail_pool.submit(send_verification_email, existing_user.email, code, existing_user.username)
+            return render_template('auth.html', mode="verify", email=existing_user.email, dev_code=None)
 
         assigned_program_str = ", ".join(cleaned_programs) if cleaned_programs else "General"
         new_user = User(
