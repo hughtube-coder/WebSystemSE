@@ -335,7 +335,8 @@
                 <button type="submit" class="btn-link-resend">Didn't receive code? Resend email</button>
             </form>
 
-            <div style="margin-top: 12px;">
+            <div style="margin-top: 12px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ url_for('signup') }}" style="color: #38bdf8; font-size: 0.78rem; font-weight: 600; text-decoration: none;">✏️ Wrong email? Change email</a>
                 <a href="{{ url_for('login') }}" style="color: var(--text-muted); font-size: 0.78rem; text-decoration: none;">Return to Sign In</a>
             </div>
         </div>
