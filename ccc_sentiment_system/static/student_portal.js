@@ -1102,7 +1102,9 @@ async function openSurveyAnalytics(formId) {
         document.getElementById('analyticsModalTitle').innerText = data.title;
         document.getElementById('analyticsModalCohort').innerText = `${data.section_target} (${data.subject_code})`;
         document.getElementById('analyticsTotalCount').innerText = `${data.total_responses} students`;
-        document.getElementById('btnExportSurveyCsv').onclick = () => downloadFile(`/api/forms/${formId}/export_csv`, 'survey_export.csv');
+        document.getElementById('btnExportSurveyCsv').onclick = () => downloadFile(`/api/forms/${formId}/export_csv?format=csv`, 'survey_export.csv');
+        const btnXlsx = document.getElementById('btnExportSurveyXlsx');
+        if (btnXlsx) btnXlsx.onclick = () => downloadFile(`/api/forms/${formId}/export_csv?format=xlsx`, 'survey_export.xlsx');
 
         const container = document.getElementById('analyticsQuestionsList');
         container.innerHTML = '';
@@ -1182,6 +1184,31 @@ async function openSurveyAnalytics(formId) {
                 `;
                 container.appendChild(itemCard);
             });
+        }
+        if (!data.suppressed && data.sheet_headers && data.sheet_rows && data.sheet_rows.length > 0) {
+            const sheetWrap = document.createElement('div');
+            sheetWrap.style.cssText = 'margin-bottom:14px;';
+            const ths = data.sheet_headers.map(h => `<th style="background:linear-gradient(90deg,#1e40af,#0284c7); color:#fff; padding:10px 12px; font-size:0.74rem; font-weight:800; border-right:1px solid rgba(255,255,255,0.16); white-space:nowrap;">${esc(h)} <span style="opacity:0.8; margin-left:4px;">⌄</span></th>`).join('');
+            const trs = data.sheet_rows.map((r, rIdx) => {
+                const bg = (rIdx % 2 === 0) ? 'rgba(15, 23, 42, 0.55)' : 'rgba(30, 41, 59, 0.35)';
+                const tds = r.map(c => `<td style="padding:9px 12px; font-size:0.78rem; color:var(--text-heading); border-bottom:1px solid var(--border-subtle); border-right:1px solid var(--border-subtle);">${esc(c)}</td>`).join('');
+                return `<tr style="background:${bg};">${tds}</tr>`;
+            }).join('');
+            sheetWrap.innerHTML = `
+                <div style="display:inline-flex; align-items:center; gap:6px;">
+                    <div style="background:linear-gradient(135deg,#1d4ed8,#0284c7); color:#fff; font-size:0.76rem; font-weight:800; padding:7px 14px; border-radius:10px 10px 0 0; border:1px solid rgba(56,189,248,0.45); border-bottom:none;">
+                        Form_Responses ⌄
+                    </div>
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; background:rgba(14,165,233,0.15); border:1px solid rgba(56,189,248,0.35); color:#38bdf8; font-weight:800;">⊞</span>
+                </div>
+                <div style="overflow-x:auto; border:1.5px solid rgba(37,99,235,0.45); border-radius:0 12px 12px 12px; max-height:260px;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left;">
+                        <thead><tr>${ths}</tr></thead>
+                        <tbody>${trs}</tbody>
+                    </table>
+                </div>
+            `;
+            container.prepend(sheetWrap);
         }
         openModal('surveyAnalyticsModal');
     } catch (err) { hideLoader(); showToast(err.userMessage || "Failed to load survey analytics.", 'error'); }
