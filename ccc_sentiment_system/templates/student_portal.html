@@ -808,7 +808,10 @@ html[data-theme="light"] body #toast {
                         Cohort: <strong id="analyticsModalCohort" style="color:var(--txt-soft);">ALL</strong> &bull; Total Submissions: <strong id="analyticsTotalCount" style="color:var(--txt-blue); font-size:0.92rem;">0</strong>
                     </p>
                 </div>
-                <button class="btn-nav" id="btnExportSurveyCsv" style="color:var(--txt-blue); border-color:rgba(59,130,246,0.4);">📥 Export Survey CSV</button>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="btn-nav" id="btnExportSurveyXlsx" style="background:linear-gradient(135deg, rgba(29,78,216,0.25), rgba(14,165,233,0.22)); color:#38bdf8; border-color:rgba(56,189,248,0.5); font-weight:800;">📊 Export Styled Sheet (.xlsx)</button>
+                    <button class="btn-nav" id="btnExportSurveyCsv" style="color:var(--txt-blue); border-color:rgba(59,130,246,0.4);">📥 Export Raw (.csv)</button>
+                </div>
             </div>
 
             <div id="analyticsQuestionsList" style="display:flex; flex-direction:column; gap:12px; margin-top:8px;"></div>
