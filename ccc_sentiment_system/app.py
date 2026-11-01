@@ -2439,17 +2439,259 @@ def delete_form_api(form_id):
     db.session.commit()
     return jsonify({"success": True, "purged": purge})
 
+from xml.sax.saxutils import escape as _xml_escape
+
+LIKERT_VERBAL_MAP = {
+    5: "5 (SA)",
+    4: "4 (A)",
+    3: "3 (N)",
+    2: "2 (D)",
+    1: "1 (SD)",
+}
+
+def _format_likert_cell(val):
+    if val is None or val == "":
+        return ""
+    try:
+        n = int(val)
+        return LIKERT_VERBAL_MAP.get(n, str(val))
+    except (TypeError, ValueError):
+        return str(val)
+
+def _format_program_full(prog_raw):
+    p = str(prog_raw or "General").strip()
+    p_up = p.upper()
+    if p_up == "BSCS":
+        return "Bachelor of Science in Computer Science (BSCS)"
+    if p_up == "BSIT":
+        return "Bachelor of Science in Information Technology (BSIT)"
+    if p_up == "ALL":
+        return "BSCS & BSIT (DCI)"
+    return p
+
+def _format_sheet_timestamp(dt):
+    if not dt:
+        return datetime.utcnow().strftime("%m/%d/%Y %H:%M:%S")
+    if isinstance(dt, str):
+        return dt
+    return dt.strftime("%m/%d/%Y %H:%M:%S")
+
+def build_leximetrix_xlsx(sheet_title, table_banner_label, headers, rows):
+    """Generates a zero-dependency OpenXML (.xlsx) workbook styled in the LexiMetrix Blue & Deep Navy palette."""
+    def col_letter(n):
+        s = ""
+        while n > 0:
+            n, r = divmod(n - 1, 26)
+            s = chr(65 + r) + s
+        return s
+
+    num_cols = max(len(headers), 1)
+    last_col = col_letter(num_cols)
+    last_row = len(rows) + 2
+
+    col_widths = []
+    for c_idx in range(num_cols):
+        h_len = len(str(headers[c_idx])) + 6
+        max_cell = h_len
+        for r in rows[:250]:
+            if c_idx < len(r) and r[c_idx] is not None:
+                val_str = str(r[c_idx])
+                max_cell = max(max_cell, min(len(val_str) + 4, 62))
+        col_widths.append(max(15, min(max_cell, 62)))
+
+    cols_xml = "".join(
+        f'<col min="{i+1}" max="{i+1}" width="{w}" customWidth="1"/>'
+        for i, w in enumerate(col_widths)
+    )
+
+    def make_cell(ref, val, style_id):
+        if val is None:
+            val = ""
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            return f'<c r="{ref}" s="{style_id}"><v>{val}</v></c>'
+        s_val = _xml_escape(str(val))
+        return f'<c r="{ref}" t="inlineStr" s="{style_id}"><is><t xml:space="preserve">{s_val}</t></is></c>'
+
+    sheet_rows_xml = []
+    r1_cells = [make_cell("A1", f"⊞  {table_banner_label}  ⌄", 1)]
+    for c_idx in range(1, num_cols):
+        r1_cells.append(make_cell(f"{col_letter(c_idx+1)}1", "", 5))
+    sheet_rows_xml.append(f'<row r="1" ht="26" customHeight="1">{"".join(r1_cells)}</row>')
+
+    r2_cells = [
+        make_cell(f"{col_letter(c_idx+1)}2", str(h), 2)
+        for c_idx, h in enumerate(headers)
+    ]
+    sheet_rows_xml.append(f'<row r="2" ht="28" customHeight="1">{"".join(r2_cells)}</row>')
+
+    for r_idx, row_vals in enumerate(rows, start=3):
+        base_style = 3 if (r_idx % 2 == 1) else 4
+        r_cells = []
+        max_lines = 1
+        for c_idx in range(num_cols):
+            v = row_vals[c_idx] if c_idx < len(row_vals) else ""
+            v_str = str(v).strip() if v is not None else ""
+            if len(v_str) > 55:
+                max_lines = max(max_lines, min(4, (len(v_str) // 55) + 1))
+            cell_style = base_style
+            v_low = v_str.lower()
+            if v_low in ("positive", "5 (sa)", "4 (a)"):
+                cell_style = 6
+            elif v_low in ("negative", "1 (sd)", "2 (d)"):
+                cell_style = 7
+            elif v_low in ("neutral", "3 (n)"):
+                cell_style = 8
+            r_cells.append(make_cell(f"{col_letter(c_idx+1)}{r_idx}", v, cell_style))
+        row_ht = 22 if max_lines == 1 else (18 * max_lines)
+        sheet_rows_xml.append(f'<row r="{r_idx}" ht="{row_ht}" customHeight="1">{"".join(r_cells)}</row>')
+
+    safe_sheet_name = _xml_escape((sheet_title or "Form_Responses")[:31])
+
+    content_types_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>"""
+
+    rels_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"""
+
+    workbook_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="{safe_sheet_name}" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>"""
+
+    workbook_rels_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>"""
+
+    styles_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="7">
+    <font><sz val="10"/><color rgb="FF0F172A"/><name val="Roboto"/></font>
+    <font><b/><sz val="10.5"/><color rgb="FF38BDF8"/><name val="Roboto"/></font>
+    <font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Roboto"/></font>
+    <font><sz val="10"/><color rgb="FF1E293B"/><name val="Roboto"/></font>
+    <font><b/><sz val="10"/><color rgb="FF047857"/><name val="Roboto"/></font>
+    <font><b/><sz val="10"/><color rgb="FFBE123C"/><name val="Roboto"/></font>
+    <font><b/><sz val="10"/><color rgb="FFB45309"/><name val="Roboto"/></font>
+  </fonts>
+  <fills count="9">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF0C1527"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF1D4ED8"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD1FAE5"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFE4E6"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/></patternFill></fill>
+  </fills>
+  <borders count="3">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FFCBD5E1"/></left>
+      <right style="thin"><color rgb="FFCBD5E1"/></right>
+      <top style="thin"><color rgb="FFCBD5E1"/></top>
+      <bottom style="thin"><color rgb="FFCBD5E1"/></bottom>
+      <diagonal/>
+    </border>
+    <border>
+      <left style="thin"><color rgb="FF1E40AF"/></left>
+      <right style="thin"><color rgb="FF1E40AF"/></right>
+      <top style="medium"><color rgb="FF0EA5E9"/></top>
+      <bottom style="medium"><color rgb="FF1E3A8A"/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="9">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="left" vertical="center" indent="1"/>
+    </xf>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="left" vertical="center" wrapText="1"/>
+    </xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="left" vertical="center" wrapText="1"/>
+    </xf>
+    <xf numFmtId="0" fontId="3" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="left" vertical="center" wrapText="1"/>
+    </xf>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFill="1"/>
+    <xf numFmtId="0" fontId="4" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="center" vertical="center"/>
+    </xf>
+    <xf numFmtId="0" fontId="5" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="center" vertical="center"/>
+    </xf>
+    <xf numFmtId="0" fontId="6" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
+      <alignment horizontal="center" vertical="center"/>
+    </xf>
+  </cellXfs>
+  <cellStyles count="1">
+    <cellStyle name="Normal" xfId="0" builtinId="0"/>
+  </cellStyles>
+</styleSheet>"""
+
+    worksheet_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetViews>
+    <sheetView workbookViewId="0">
+      <pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/>
+    </sheetView>
+  </sheetViews>
+  <cols>{cols_xml}</cols>
+  <sheetData>{"".join(sheet_rows_xml)}</sheetData>
+  <autoFilter ref="A2:{last_col}{last_row}"/>
+</worksheet>"""
+
+    import zipfile as _zf_mod
+    buf = io.BytesIO()
+    with _zf_mod.ZipFile(buf, "w", _zf_mod.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", content_types_xml)
+        zf.writestr("_rels/.rels", rels_xml)
+        zf.writestr("xl/workbook.xml", workbook_xml)
+        zf.writestr("xl/_rels/workbook.xml.rels", workbook_rels_xml)
+        zf.writestr("xl/styles.xml", styles_xml)
+        zf.writestr("xl/worksheets/sheet1.xml", worksheet_xml)
+    buf.seek(0)
+    return buf.getvalue()
+
 @app.route('/api/forms/<int:form_id>/analytics', methods=['GET'])
 @login_required
 @api_guard
 def get_form_analytics(form_id):
-    form, err = _manageable_form(form_id)          # creator or MISD only; removed surveys count as gone
+    form, err = _manageable_form(form_id)
     if err: return err
 
     subs = FormAnonymousSubmission.query.filter_by(form_id=form.id).all()
-    base = {"form_id": form.id, "title": form.title, "section_target": form.section_target or "ALL", "subject_code": form.subject_code or "N/A", "total_responses": len(subs), "min_required": MIN_ANON_GROUP}
+    base = {
+        "form_id": form.id,
+        "title": form.title,
+        "program": _format_program_full(form.program),
+        "academic_year": form.academic_year,
+        "semester": form.semester,
+        "section_target": form.section_target or "ALL",
+        "subject_code": form.subject_code or "N/A",
+        "total_responses": len(subs),
+        "min_required": MIN_ANON_GROUP
+    }
     if not _privacy_exempt() and 0 < len(subs) < MIN_ANON_GROUP:
-        base.update({"suppressed": True, "questions_analytics": [], "privacy_note": f"Results stay hidden until at least {MIN_ANON_GROUP} people have responded, so nobody can be picked out from a handful of answers. {len(subs)} so far."})
+        base.update({"suppressed": True, "questions_analytics": [], "sheet_headers": [], "sheet_rows": [], "privacy_note": f"Results stay hidden until at least {MIN_ANON_GROUP} people have responded, so nobody can be picked out from a handful of answers. {len(subs)} so far."})
         return jsonify(base)
 
     try: questions = json.loads(form.questions_json)
@@ -2457,10 +2699,13 @@ def get_form_analytics(form_id):
 
     q_stats = {str(q.get("id")): {"id": q.get("id"), "prompt": q.get("prompt"), "type": q.get("type", "narrative"), "total_answers": 0, "likert_sum": 0, "likert_counts": {1:0,2:0,3:0,4:0,5:0}, "choice_counts": {}, "narratives": []} for q in questions}
 
+    parsed_subs = []
     for sub in subs:
+        ans_map = {}
         try:
             for ans in json.loads(sub.answers_json):
                 qid = str(ans.get("question_id"))
+                ans_map[qid] = ans
                 if qid in q_stats:
                     st = q_stats[qid]; st["total_answers"] += 1
                     val = ans.get("value"); score = ans.get("score")
@@ -2478,16 +2723,52 @@ def get_form_analytics(form_id):
                     else:
                         n_val = ans.get("answer") or val or ans.get("narrative_text")
                         if n_val: st["narratives"].append(str(n_val))
-        except Exception: pass
+        except Exception:
+            pass
+        parsed_subs.append(ans_map)
 
     for st in q_stats.values():
         st["narratives"] = [safe_out(n) for n in st["narratives"]]
-        random.shuffle(st["narratives"])             # the order of answers would reveal who answered first
+        random.shuffle(st["narratives"])
         if st["type"] == "likert": st["average_rating"] = round(st["likert_sum"] / st["total_answers"], 2) if st["total_answers"] > 0 else 0
-        if not _privacy_exempt() and 0 < st["total_answers"] < MIN_ANON_GROUP:   # an optional question that only a few people answered
+        if not _privacy_exempt() and 0 < st["total_answers"] < MIN_ANON_GROUP:
             st.update({"hidden": True, "narratives": [], "choice_counts": {}, "likert_counts": {1:0,2:0,3:0,4:0,5:0}, "average_rating": 0})
 
+    random.shuffle(parsed_subs)
+    sheet_headers = ["Response #", "Program", "Year & Section"]
+    for q in questions:
+        sheet_headers.append(f"Q{q.get('id')}: {q.get('prompt')}")
+        if q.get("type") == "likert" and (q.get("allow_explanation") or q.get("elaboration_logic") in ["low", "low_mid", "always"]):
+            sheet_headers.append(f"Q{q.get('id')} Elaboration")
+
+    sheet_rows = []
+    prog_display = _format_program_full(form.program)
+    sec_display = form.section_target or "ALL"
+    for idx_r, ans_map in enumerate(parsed_subs, 1):
+        r_vals = [f"Anon #{idx_r}", prog_display, sec_display]
+        for q in questions:
+            qid_str = str(q.get("id"))
+            st_q = q_stats.get(qid_str, {})
+            is_hidden = bool(st_q.get("hidden"))
+            entry = ans_map.get(qid_str, {})
+            val = entry.get("value")
+            if val is None:
+                val = entry.get("score") if entry.get("score") is not None else entry.get("answer")
+            if isinstance(val, list):
+                val = "; ".join(str(v) for v in val)
+            if is_hidden:
+                r_vals.append("(hidden: <5 responses)")
+            elif q.get("type") == "likert":
+                r_vals.append(_format_likert_cell(val))
+            else:
+                r_vals.append(safe_out(val) if isinstance(val, str) else (val or ""))
+            if q.get("type") == "likert" and (q.get("allow_explanation") or q.get("elaboration_logic") in ["low", "low_mid", "always"]):
+                r_vals.append("(hidden: <5 responses)" if is_hidden else safe_out(entry.get("narrative_text", "")))
+        sheet_rows.append(r_vals)
+
     base["questions_analytics"] = list(q_stats.values())
+    base["sheet_headers"] = sheet_headers
+    base["sheet_rows"] = sheet_rows
     return jsonify(base)
 
 @app.route('/api/forms/<int:form_id>/export_csv', methods=['GET'])
@@ -2497,12 +2778,13 @@ def export_form_csv(form_id):
     form, err = _manageable_form(form_id)
     if err: return err
 
+    fmt = request.args.get("format", "csv").strip().lower()
     try: questions = json.loads(form.questions_json)
     except Exception: questions = []
     submissions = FormAnonymousSubmission.query.filter_by(form_id=form.id).all()
     if not _privacy_exempt() and 0 < len(submissions) < MIN_ANON_GROUP:
         return jsonify({"error": f"The export unlocks once at least {MIN_ANON_GROUP} people have responded, to protect their anonymity ({len(submissions)} so far)."}), 403
-    random.shuffle(submissions)                      # row order would reveal who answered first
+    random.shuffle(submissions)
 
     parsed = []
     answered = {}
@@ -2513,32 +2795,56 @@ def export_form_csv(form_id):
         except Exception: pass
         parsed.append(ans_map)
         for qid, it in ans_map.items():
-            if it.get("value") not in (None, "", []) or it.get("narrative_text") or it.get("answer") or it.get("score") is not None: answered[qid] = answered.get(qid, 0) + 1
+            if it.get("value") not in (None, "", []) or it.get("narrative_text") or it.get("answer") or it.get("score") is not None:
+                answered[qid] = answered.get(qid, 0) + 1
 
     def hidden(q): return (not _privacy_exempt()) and 0 < answered.get(str(q.get("id")), 0) < MIN_ANON_GROUP
 
-    output = io.StringIO()
-    writer = csv.writer(output)
-    headers = ["Response #"]
+    headers = ["Response #", "Program", "Year & Section", "Academic Term"]
     for q in questions:
         headers.append(f"Q{q.get('id')}: {q.get('prompt')}")
         if q.get("type") == "likert" and (q.get("allow_explanation") or q.get("elaboration_logic") in ["low", "low_mid", "always"]):
             headers.append(f"Q{q.get('id')} Elaboration")
-    writer.writerow(headers)
+
+    prog_display = _format_program_full(form.program)
+    sec_display = form.section_target or "ALL"
+    term_display = f"{form.academic_year} • {form.semester}"
+    rows_out = []
 
     for n, ans_map in enumerate(parsed, 1):
-        row = [n]
+        row = [f"Anon #{n}", prog_display, sec_display, term_display]
         for q in questions:
             entry = ans_map.get(str(q.get("id")), {})
             val = entry.get("value")
-            if val is None: val = entry.get("score") or entry.get("answer")
-            if isinstance(val, list): val = "; ".join(str(v) for v in val)
-            row.append("(hidden: too few answers)" if hidden(q) else csv_safe(safe_out(val) if isinstance(val, str) else val))
+            if val is None:
+                val = entry.get("score") if entry.get("score") is not None else entry.get("answer")
+            if isinstance(val, list):
+                val = "; ".join(str(v) for v in val)
+            if hidden(q):
+                cell_val = "(hidden: too few answers)"
+            elif q.get("type") == "likert":
+                cell_val = _format_likert_cell(val)
+            else:
+                cell_val = safe_out(val) if isinstance(val, str) else (val or "")
+            row.append(cell_val if fmt == "xlsx" else csv_safe(cell_val))
             if q.get("type") == "likert" and (q.get("allow_explanation") or q.get("elaboration_logic") in ["low", "low_mid", "always"]):
-                row.append("(hidden: too few answers)" if hidden(q) else csv_safe(safe_out(entry.get("narrative_text", ""))))
-        writer.writerow(row)
+                elab = "(hidden: too few answers)" if hidden(q) else safe_out(entry.get("narrative_text", ""))
+                row.append(elab if fmt == "xlsx" else csv_safe(elab))
+        rows_out.append(row)
 
     safe_title = re.sub(r'[^\w\-_\.]', '_', form.title)[:25]
+    if fmt == "xlsx":
+        xlsx_data = build_leximetrix_xlsx("Form_Responses", f"Form_Responses — {form.title[:45]}", headers, rows_out)
+        return Response(
+            xlsx_data,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment;filename=survey_export_{form.id}_{safe_title}.xlsx"}
+        )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    writer.writerows(rows_out)
     return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": f"attachment;filename=survey_export_{form.id}_{safe_title}.csv"})
 
 # ==========================================
@@ -3743,12 +4049,13 @@ def import_rollback(batch_id):
 @login_required
 @api_guard
 def export_csv():
-    if _is_student(): return jsonify({"error": "Unauthorized."}), 403     # this export used to be open to every signed-in student
+    if _is_student(): return jsonify({"error": "Unauthorized."}), 403
     prog = request.args.get('program', 'ALL').strip().upper()
     sent = request.args.get('sentiment', 'ALL').strip().capitalize()
     yr = request.args.get('year', 'ALL').strip()
     sem = request.args.get('semester', 'ALL').strip()
     source_filter = request.args.get('source', 'Portal').strip()
+    fmt = request.args.get('format', 'csv').strip().lower()
 
     exclude_neutral = request.args.get('binary', '0').strip() == '1'
     query = Feedback.query.filter_by(department="DCI")
@@ -3771,17 +4078,35 @@ def export_csv():
     if not _is_dev(): query = query.filter(Feedback.source != 'Testing')
     if source_filter != 'ALL': query = query.filter_by(source=source_filter)
 
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["ID", "Academic Year", "Semester", "Program", "Data Source", "Raw Feedback", "Sentiment", "Confidence", "Timestamp"])
-
     records = query.order_by(Feedback.id.asc()).all()
     if not _privacy_exempt() and 0 < len(records) < MIN_ANON_GROUP:
         return jsonify({"error": f"The export unlocks once at least {MIN_ANON_GROUP} responses match these filters ({len(records)} so far), to protect the people who wrote them."}), 403
-    for r in records:
-        writer.writerow([r.id, csv_safe(r.academic_year), csv_safe(r.semester), csv_safe(r.program), csv_safe(r.source), csv_safe(safe_out(r.raw_text)), r.sentiment, r.confidence, r.timestamp])
 
-    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": f"attachment;filename=dci_sentiment_export.csv"})
+    headers = ["Timestamp", "Program", "Academic Year", "Semester", "Data Source", "Sentiment", "Confidence", "Raw Feedback"]
+    rows_out = []
+    for r in records:
+        ts_str = _format_sheet_timestamp(r.timestamp)
+        prog_str = _format_program_full(r.program)
+        conf_str = f"{round(float(r.confidence or 0) * 100, 1)}%"
+        clean_fb = safe_out(r.raw_text)
+        if fmt == "xlsx":
+            rows_out.append([ts_str, prog_str, r.academic_year, r.semester, r.source, r.sentiment, conf_str, clean_fb])
+        else:
+            rows_out.append([csv_safe(ts_str), csv_safe(prog_str), csv_safe(r.academic_year), csv_safe(r.semester), csv_safe(r.source), r.sentiment, r.confidence, csv_safe(clean_fb)])
+
+    if fmt == "xlsx":
+        xlsx_data = build_leximetrix_xlsx("Feedback_Responses", "Feedback_Responses (LexiMetrix NLP Dataset)", headers, rows_out)
+        return Response(
+            xlsx_data,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment;filename=dci_sentiment_export.xlsx"}
+        )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    writer.writerows(rows_out)
+    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=dci_sentiment_export.csv"})
 
 
 @app.route('/api/admin/clear_demo_data', methods=['POST'])
