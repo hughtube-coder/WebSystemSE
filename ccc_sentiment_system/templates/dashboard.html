@@ -920,6 +920,64 @@
             color: #0f172a !important;
         }
 
+
+        /* ===== GOOGLE-SHEETS-STYLE STRUCTURED TABLE UI (LEXIMETRIX SYSTEM PALETTE) ===== */
+        .gs-sheet-wrap { display: flex; flex-direction: column; margin-top: 6px; }
+        .gs-sheet-topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .gs-sheet-tab-group { display: inline-flex; align-items: center; gap: 6px; }
+        .gs-sheet-tab {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);
+            color: #ffffff; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.2px;
+            padding: 8px 16px; border-radius: 11px 11px 0 0;
+            border: 1px solid rgba(56, 189, 248, 0.45); border-bottom: none;
+            box-shadow: 0 -4px 16px rgba(14, 165, 233, 0.22);
+            user-select: none;
+        }
+        .gs-sheet-grid-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; border-radius: 7px;
+            background: rgba(14, 165, 233, 0.14); border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #38bdf8; font-size: 0.9rem; font-weight: 800; margin-bottom: 3px;
+        }
+        .table-responsive.gs-table-frame {
+            border-radius: 0 14px 14px 14px !important;
+            border: 1.5px solid rgba(37, 99, 235, 0.45) !important;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32) !important;
+            overflow-x: auto;
+        }
+        .logs-table thead tr th, .gs-styled-table thead tr th {
+            background: linear-gradient(90deg, #1e40af 0%, #1d4ed8 55%, #0284c7 100%) !important;
+            color: #ffffff !important;
+            font-size: 0.74rem !important;
+            font-weight: 800 !important;
+            text-transform: none !important;
+            letter-spacing: 0.2px !important;
+            padding: 13px 16px !important;
+            border-bottom: 2px solid #38bdf8 !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.16) !important;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .logs-table thead tr th:last-child, .gs-styled-table thead tr th:last-child { border-right: none !important; }
+        .gs-th-inner { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+        .gs-th-caret {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; border-radius: 4px;
+            background: rgba(255, 255, 255, 0.14); color: #e0f2fe;
+            font-size: 0.72rem; font-weight: 900; flex-shrink: 0;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+        .logs-table thead tr th:hover .gs-th-caret { background: rgba(255, 255, 255, 0.28); color: #ffffff; }
+        .logs-table tbody tr:nth-child(odd) { background: rgba(12, 22, 42, 0.72); }
+        .logs-table tbody tr:nth-child(even) { background: rgba(20, 34, 62, 0.48); }
+        .logs-table td { border-right: 1px solid rgba(148, 163, 184, 0.10); border-bottom: 1px solid rgba(148, 163, 184, 0.14); }
+        .logs-table td:last-child { border-right: none; }
+        html[data-theme="light"] .logs-table tbody tr:nth-child(odd) { background: #eef3f9 !important; }
+        html[data-theme="light"] .logs-table tbody tr:nth-child(even) { background: #e3ebf5 !important; }
+        html[data-theme="light"] .logs-table td { border-right: 1px solid rgba(15, 23, 42, 0.08) !important; border-bottom: 1px solid rgba(15, 23, 42, 0.11) !important; }
+
     </style>
 </head>
 <body>
@@ -1473,7 +1531,8 @@
             {% if role in ['Developer', 'Admin'] %}
             <button class="btn-nav" onclick="openCsvModal()" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📥 Upload CSV &amp; Template</button>
             {% endif %}
-            <button class="btn-nav" onclick="exportCurrentCsv()">Export CSV</button>
+            <button class="btn-nav" onclick="exportCurrentCsv('xlsx')" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;" title="Download Google-Sheets-style formatted .xlsx table">📊 Export Sheet (.xlsx)</button>
+            <button class="btn-nav" onclick="exportCurrentCsv('csv')">📥 Export CSV</button>
             {% if role in ['Developer', 'Admin'] %}
             <button class="btn-nav" onclick="openLexiconModal()">Slang Manager</button>
             <button class="btn-nav" id="evalNavBtn" onclick="openModelEvalModal()" style="border-color:rgba(16,185,129,0.45); color:#34d399; font-weight:700;">📊 AI Evaluation (F1)</button>
@@ -1717,19 +1776,34 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="logs-table">
-                    <thead>
-                        <tr>
-                            <th style="width:9%;">Program</th>
-                            <th style="width:13%;">Academic Term</th>
-                            <th style="width:34%;">Student Narrative &amp; Why Positive / Negative</th>
-                            <th style="width:10%;">Polarity</th>
-                            <th style="width:36%;">Aspects & Word Impact Scaling (-1, 0, 1)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsTableBody"></tbody>
-                </table>
+            <div class="gs-sheet-wrap">
+                <div class="gs-sheet-topbar">
+                    <div class="gs-sheet-tab-group">
+                        <div class="gs-sheet-tab">
+                            <span>Feedback_Responses</span>
+                            <span style="opacity:0.85; font-size:0.72rem;">⌄</span>
+                        </div>
+                        <span class="gs-sheet-grid-badge" title="Google-Sheets-Style Structured Table View">⊞</span>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
+                        <button type="button" class="btn-nav" onclick="exportCurrentCsv('xlsx')" style="padding:5px 12px; font-size:0.74rem; border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📊 Download Styled Sheet (.xlsx)</button>
+                        <button type="button" class="btn-nav" onclick="exportCurrentCsv('csv')" style="padding:5px 12px; font-size:0.74rem;">📥 Raw (.csv)</button>
+                    </div>
+                </div>
+                <div class="table-responsive gs-table-frame">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th style="width:9%;" onclick="sortLogsByColumn('program')"><div class="gs-th-inner"><span>Program</span><span class="gs-th-caret" id="caret_program">⌄</span></div></th>
+                                <th style="width:13%;" onclick="sortLogsByColumn('term')"><div class="gs-th-inner"><span>Academic Term</span><span class="gs-th-caret" id="caret_term">⌄</span></div></th>
+                                <th style="width:34%;" onclick="sortLogsByColumn('text')"><div class="gs-th-inner"><span>Student Narrative &amp; Why Positive / Negative</span><span class="gs-th-caret" id="caret_text">⌄</span></div></th>
+                                <th style="width:10%;" onclick="sortLogsByColumn('sentiment')"><div class="gs-th-inner"><span>Polarity</span><span class="gs-th-caret" id="caret_sentiment">⌄</span></div></th>
+                                <th style="width:34%;" onclick="sortLogsByColumn('confidence')"><div class="gs-th-inner"><span>Aspects &amp; Word Impact Scaling (-1, 0, 1)</span><span class="gs-th-caret" id="caret_confidence">⌄</span></div></th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Server-Side Pagination Controller -->
