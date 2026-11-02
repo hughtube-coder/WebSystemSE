@@ -2542,7 +2542,7 @@
         }
 
         // ---------- Custom Summary Builder ----------
-        const CS_ASPECTS = ["Instructional Delivery & Pedagogy", "Faculty Demeanor & Approachability", "Campus Facilities & Infrastructure"];
+        const CS_ASPECTS = ["Instructional Delivery & Pedagogy", "Faculty Demeanor & Approachability", "Campus Facilities & Infrastructure", "General Academic Feedback"];
         const CS_SHOW = [["kpi", "Totals"], ["program", "By program"], ["term", "By term"], ["aspect", "By aspect"], ["source", "By source"]];
 
         function csChips(id, name, items, checkedDefault) {
@@ -2800,7 +2800,7 @@
 
         async function fetchKeywordCloud(prog, sent, year, sem) {
             try {
-                const res = await apiFetch(`/api/analytics/keywords?program=${encodeURIComponent(prog)}&sentiment=${encodeURIComponent(sent)}&year=${encodeURIComponent(year)}&semester=${encodeURIComponent(sem)}&source=${encodeURIComponent(currentSource)}&binary=${binaryOnlyMode ? '1' : '0'}&binary=${binaryOnlyMode ? '1' : '0'}`);
+                const res = await apiFetch(`/api/analytics/keywords?program=${encodeURIComponent(prog)}&sentiment=${encodeURIComponent(sent)}&year=${encodeURIComponent(year)}&semester=${encodeURIComponent(sem)}&source=${encodeURIComponent(currentSource)}&binary=${binaryOnlyMode ? '1' : '0'}`);
                 const data = await readJson(res, "Could not load data.");
                 const container = document.getElementById('keywordCloudContainer');
                 if (!container) return;
