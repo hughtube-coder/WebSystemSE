@@ -607,7 +607,7 @@ DEFAULT_LEXICON = {
         "frustrating", "frustrated", "disappointing", "disappointed", "sad", "malungkot", "lungkot", "upset",
         "angry", "galit", "mad", "furious", "hate", "ayaw", "awit", "umay", "nakakaumay", "bulok", "palpak",
         "pahirap", "pasakit", "problema", "problem", "problems", "issue", "issues", "complaint", "reklamo",
-        "wrong", "mali", "mistake", "unusable", "inaccessible", "unavailable"
+        "wrong", "mali", "mistake", "unusable", "inaccessible", "unavailable", "dislike", "disliked", "dislikes", "inefficient", "ineffective", "inaccurate", "inadequate", "incomplete", "insensitive", "unhelpful", "unacceptable", "unsatisfactory"
     ],
     "intensifiers": [
         "sobrang", "sobra", "masyado", "masyadong", "very", "super", "really", "so", "grabe", "grabeng",
@@ -884,9 +884,38 @@ def get_classifier():
     return _clf
 
 ASPECT_CATEGORIES = {
-    "Instructional Delivery & Pedagogy": ["lecture", "turo", "explain", "speak", "speaks", "discussion", "mabilis", "fast", "slow", "teaching", "lesson", "clear", "malinaw", "linaw", "confusing", "exam", "quiz", "task", "activity", "galing", "magaling"],
-    "Faculty Demeanor & Approachability": ["talk", "approachable", "mabait", "bait", "attitude", "sungit", "masungit", "easy", "friendly", "accommodating", "strict", "patient", "galit", "snob", "ugali", "pakikitungo", "demeanor", "prof", "maam", "sir"],
-    "Campus Facilities & Infrastructure": ["room", "classroom", "fan", "electric fan", "aircon", "mainit", "init", "hot", "computer", "wifi", "internet", "projector", "lab", "laboratory", "chair", "upuan"]
+    "Instructional Delivery & Pedagogy": [
+        "lecture", "lectures", "turo", "magturo", "nagtuturo", "explain", "explanation", "paliwanag",
+        "speak", "speaks", "discussion", "discuss", "mabilis", "fast", "slow", "teaching", "lesson", "lessons",
+        "clear", "malinaw", "linaw", "confusing", "exam", "examination", "quiz", "task", "activity", "activities",
+        "galing", "magaling", "pacing", "syllabus", "rubric", "grading", "module", "modules", "coding", "algorithm"
+    ],
+    "Faculty Demeanor & Approachability": [
+        "talk", "approachable", "mabait", "bait", "attitude", "sungit", "masungit", "easy",
+        "friendly", "accommodating", "strict", "patient", "galit", "snob", "ugali", "pakikitungo",
+        "demeanor", "prof", "maam", "sir", "teacher", "instructor", "faculty", "sumagot", "consult"
+    ],
+    "Campus Facilities & Infrastructure": [
+        "room", "classroom", "fan", "electric fan", "aircon", "mainit", "init", "hot",
+        "computer", "computers", "pc", "wifi", "wi-fi", "internet", "projector", "lab", "laboratory",
+        "chair", "chairs", "upuan", "facilities", "building", "auditorium", "portal", "socket"
+    ]
+}
+
+ASPECT_ENTITY_NOUNS = {
+    "Campus Facilities & Infrastructure": {
+        "room", "classroom", "fan", "aircon", "computer", "computers", "pc", "wifi", "internet",
+        "projector", "lab", "laboratory", "chair", "chairs", "upuan", "facilities", "building", "auditorium", "socket", "mainit", "init", "malamig"
+    },
+    "Faculty Demeanor & Approachability": {
+        "approachable", "mabait", "bait", "attitude", "sungit", "masungit", "friendly", "accommodating",
+        "strict", "patient", "galit", "snob", "ugali", "pakikitungo", "demeanor", "consult"
+    },
+    "Instructional Delivery & Pedagogy": {
+        "lecture", "lectures", "turo", "magturo", "nagtuturo", "explain", "explanation", "paliwanag",
+        "discussion", "discuss", "teaching", "lesson", "lessons", "exam", "examination", "quiz",
+        "task", "activity", "activities", "pacing", "syllabus", "rubric", "grading", "module", "modules", "coding", "algorithm"
+    }
 }
 
 def get_active_lexicon():
@@ -894,7 +923,6 @@ def get_active_lexicon():
     lex = {"positive": set(), "negative": set(), "intensifiers": set(), "negations": set()}
     for t in terms:
         if t.category in lex: lex[t.category].add(t.word.lower())
-    # Profanity is read as an intensifier: it makes whatever sentiment it sits next to stronger (the words themselves are never stored or shown)
     lex["intensifiers"] |= {w for w in ({x.lower() for x in DEFAULT_PROFANITY} | {t.word.lower() for t in terms if t.category == "profanity"}) if " " not in w}
     return lex
 
@@ -906,20 +934,29 @@ def preprocess_taglish_text(text):
     return text.strip()[:2000]
 
 def segment_compound_text(text):
-    clauses = re.split(r"(?<=[.!?])\s+|\b(?:but|pero|kaso|kaso lang|however|although|while|yet)\b", text, flags=re.IGNORECASE)
-    cleaned = [c.strip() for c in clauses if len(c.strip()) > 2]
+    clauses = re.split(r"(?<=[.!?])\s+|\b(?:kaso\s+lang|pero|kaso|but|however|although|while|yet)\b", text, flags=re.IGNORECASE)
+    cleaned = [c.strip() for c in clauses if len(c.strip()) >= 2]
     return cleaned[:12] if cleaned else [text]
 
 def detect_aspect(clause):
     clause_lower = clause.lower()
-    for aspect, keywords in ASPECT_CATEGORIES.items():
-        if any(re.search(r'\b' + re.escape(k) + r'\b', clause_lower) for k in keywords):
-            return aspect
-    return "General Academic Feedback"
+    best_aspect = "General Academic Feedback"
+    best_score = 0
+    for aspect in ("Campus Facilities & Infrastructure", "Faculty Demeanor & Approachability", "Instructional Delivery & Pedagogy"):
+        keywords = ASPECT_CATEGORIES[aspect]
+        entity_nouns = ASPECT_ENTITY_NOUNS[aspect]
+        score = 0
+        for k in keywords:
+            if re.search(r'\b' + re.escape(k) + r'\b', clause_lower):
+                score += 3 if k in entity_nouns else 1
+        if score > best_score:
+            best_score = score
+            best_aspect = aspect
+    return best_aspect
 
 def strip_tagalog_prefix(word):
     w = word
-    for prefix in ["napaka", "pinaka", "nakaka", "nakapag", "nagka", "magka", "pagka", "naka", "maka", "nag", "mag", "pag", "ma", "na", "pa", "ka", "un", "in", "dis"]:
+    for prefix in ["napaka", "pinaka", "nakaka", "nakapag", "nagka", "magka", "pagka", "naka", "maka", "nag", "mag", "pag", "ma", "na", "pa", "ka"]:
         if w.startswith(prefix) and len(w) > len(prefix) + 2:
             w = w[len(prefix):]
             break
@@ -929,13 +966,16 @@ def strip_tagalog_prefix(word):
             break
     return w
 
-def _match_lex(word, root, lex_set):
-    if word in lex_set or root in lex_set:
+def _match_stem_only(word, root, lex_set):
+    if root in lex_set:
         return True
     for suf in ("ng", "g", "an", "han", "in", "hin", "s", "es", "ed", "ing", "ly"):
         if word.endswith(suf) and len(word) > len(suf) + 2 and word[:-len(suf)] in lex_set:
             return True
     return False
+
+def _match_lex(word, root, lex_set):
+    return (word in lex_set) or _match_stem_only(word, root, lex_set)
 
 def evaluate_clause(clause, lexicon):
     clause_lower = clause.lower()
@@ -953,20 +993,55 @@ def evaluate_clause(clause, lexicon):
     words = re.findall(r'\b\w+\b', clause_lower)
     token_scores = []
     net_lexical_score = 0.0
-    pending_negation = False
+    negation_window = 0
     pending_intensifier = 1.0
     sarcasm_markers = {"eme", "charot", "charing", "joke"}
+    sincerity_negators = {"no", "not", "without", "walang", "wala", "di", "hindi"}
     deprivation_negators = {"wala", "walang", "no", "without", "kulang", "zero"}
     deprivation_nouns = {"kwenta", "silbi", "saysay", "wentang"}
+    negation_boundary_words = {"kung", "bakit", "paano", "kapag", "pag", "dahil", "kasi", "para", "who", "what", "why", "how", "when", "where", "because"}
+    filler_bridge_words = {"ko", "mo", "niya", "nya", "namin", "natin", "nila", "kami", "tayo", "sila", "po", "ho", "naman", "pa", "rin", "din", "talaga", "lang", "lamang", "ang", "ng", "sa", "yung", "ung", "mga", "si", "ni", "kay", "the", "a", "an", "is", "are", "was", "were", "to", "of", "in", "on", "for"}
     profanity_set = {w.lower() for w in DEFAULT_PROFANITY if " " not in w} | {w.lower() for w in _db_profanity_words() if " " not in w}
-    tech_context = bool(set(words) & {"wifi", "internet", "net", "connection", "signal", "computer", "computers", "pc", "system", "portal", "service", "response", "action"})
-    unresolved_profanity_tokens = []
 
-    for word in words:
+    fast_positive_context = {
+        "wifi", "internet", "net", "connection", "signal", "computer", "computers", "pc", "system", "portal",
+        "service", "response", "action", "aksyon", "sumagot", "magreply", "reply", "respond", "feedback",
+        "maintindihan", "gets", "matuto", "natuto", "maayos", "fix", "process", "transaction", "release"
+    }
+    fast_negative_context = {
+        "magturo", "turo", "nagtuturo", "pacing", "discuss", "discussion", "lecture", "lesson", "lessons",
+        "topic", "topics", "explain", "magsalita", "speak", "speaks", "slides", "deadline"
+    }
+    has_fast_pos_ctx = bool(set(words) & fast_positive_context) and not bool(set(words) & fast_negative_context)
+
+    unresolved_profanity_tokens = []
+    had_deprivation_negator = False
+    has_sarcasm = False
+
+    for idx, word in enumerate(words):
+        prev_word = words[idx - 1] if idx > 0 else ""
+        next_word = words[idx + 1] if idx + 1 < len(words) else ""
         root = strip_tagalog_prefix(word)
         token_info = {"word": word, "base_score": 0, "final_score": 0.0, "role": "Neutral (0)"}
 
+        if word in negation_boundary_words and negation_window > 0:
+            negation_window = 0
+            had_deprivation_negator = False
+
+        if word in ("only", "lang", "lamang") and prev_word in ("not", "hindi", "di"):
+            negation_window = 0
+            had_deprivation_negator = False
+            token_scores.append(token_info)
+            continue
+
         if word in sarcasm_markers or root in sarcasm_markers:
+            if word == "joke" and prev_word in sincerity_negators:
+                negation_window = 0
+                had_deprivation_negator = False
+                token_info["role"] = "Sincerity Idiom (0)"
+                token_scores.append(token_info)
+                continue
+            has_sarcasm = True
             token_info["role"] = "Sarcasm Invalidator"
             token_info["base_score"] = -1
             token_info["final_score"] = -1.5
@@ -974,31 +1049,61 @@ def evaluate_clause(clause, lexicon):
             token_scores.append(token_info)
             continue
 
-        # Handle 'walang kwenta / walang silbi / walang saysay' as Negative (-1.0 * intensifier) instead of double-negative Positive
-        if pending_negation and (word in deprivation_nouns or root in deprivation_nouns):
+        if negation_window > 0 and (word in deprivation_nouns or root in deprivation_nouns):
             effective = -1.0 * pending_intensifier
             token_info["base_score"] = -1
             token_info["final_score"] = round(effective, 2)
             token_info["role"] = f"Negative Deprivation ({round(effective, 2)})"
             net_lexical_score += effective
-            pending_negation = False
+            negation_window = 0
+            had_deprivation_negator = False
             pending_intensifier = 1.0
             unresolved_profanity_tokens.clear()
             token_scores.append(token_info)
             continue
 
+        is_prepositional_like = (
+            word == "like" and (
+                next_word in ("a", "an") or
+                prev_word in ("speaks", "speak", "talk", "talks", "looks", "look", "sounds", "sound", "feels", "feel", "acts", "act", "seems", "seem", "reads")
+            )
+        )
+
+        is_exact_neg = (word in lexicon["negative"]) and not (has_fast_pos_ctx and word in ("mabilis", "fast", "bilis"))
+        is_exact_pos = (word in lexicon["positive"] and not is_prepositional_like) or (has_fast_pos_ctx and word in ("mabilis", "fast", "quick"))
+
         if _match_lex(word, root, lexicon["negations"]):
-            pending_negation = True
+            negation_window = 3
+            if word in deprivation_negators:
+                had_deprivation_negator = True
             token_info["role"] = "Negator (Inverts Next)"
-        elif _match_lex(word, root, lexicon["intensifiers"]):
+        elif _match_lex(word, root, lexicon["intensifiers"]) and not is_exact_neg and not is_exact_pos:
             pending_intensifier = 1.5
             token_info["role"] = "Intensifier (1.5x Multiplier)"
             if _match_lex(word, root, profanity_set):
                 unresolved_profanity_tokens.append(token_info)
-        elif (tech_context and word in ("mabilis", "fast", "quick")) or _match_lex(word, root, lexicon["positive"]):
+        elif is_exact_neg or (not is_exact_pos and _match_stem_only(word, root, lexicon["negative"])):
+            if word in profanity_set and (idx + 1 < len(words)):
+                pending_intensifier = 1.5
+                token_info["role"] = "Intensifier (1.5x Multiplier)"
+                unresolved_profanity_tokens.append(token_info)
+            else:
+                base = -1.0
+                effective = base * pending_intensifier
+                if negation_window > 0:
+                    effective = -effective * 0.5
+                    token_info["role"] = f"Negative (Inverted to +{ round( abs(effective), 2 ) })"
+                else:
+                    token_info["role"] = f"Negative ({effective})"
+                token_info["base_score"] = -1
+                token_info["final_score"] = round(effective, 2)
+                net_lexical_score += effective
+                negation_window = 0; had_deprivation_negator = False; pending_intensifier = 1.0
+                unresolved_profanity_tokens.clear()
+        elif is_exact_pos or (not is_prepositional_like and _match_stem_only(word, root, lexicon["positive"])):
             base = 1.0
             effective = base * pending_intensifier
-            if pending_negation:
+            if negation_window > 0:
                 effective = -effective
                 token_info["role"] = f"Positive (Inverted to -{abs(effective)})"
             else:
@@ -1006,26 +1111,15 @@ def evaluate_clause(clause, lexicon):
             token_info["base_score"] = 1
             token_info["final_score"] = round(effective, 2)
             net_lexical_score += effective
-            pending_negation = False; pending_intensifier = 1.0
-            unresolved_profanity_tokens.clear()
-        elif _match_lex(word, root, lexicon["negative"]):
-            base = -1.0
-            effective = base * pending_intensifier
-            if pending_negation:
-                effective = -effective * 0.5
-                token_info["role"] = f"Negative (Inverted to +{ round( abs(effective), 2 ) })"
-            else:
-                token_info["role"] = f"Negative ({effective})"
-            token_info["base_score"] = -1
-            token_info["final_score"] = round(effective, 2)
-            net_lexical_score += effective
-            pending_negation = False; pending_intensifier = 1.0
+            negation_window = 0; had_deprivation_negator = False; pending_intensifier = 1.0
             unresolved_profanity_tokens.clear()
         else:
             token_info["base_score"] = 0; token_info["final_score"] = 0.0; token_info["role"] = "Neutral (0)"
+            if negation_window > 0 and word not in filler_bridge_words:
+                negation_window -= 1
+
         token_scores.append(token_info)
 
-    # If profanity/insult tokens appeared without any subsequent sentiment adjective to amplify, score them as Negative (-1.0 each)
     if unresolved_profanity_tokens and net_lexical_score == 0.0:
         for pt in unresolved_profanity_tokens:
             pt["base_score"] = -1
@@ -1036,8 +1130,7 @@ def evaluate_clause(clause, lexicon):
     elif net_lexical_score == 0.0 and has_profanity(clause_lower):
         net_lexical_score = -1.0
 
-    # If a deprivation negator ("walang wifi", "no aircon", "walang prof") was never resolved by an adjective, score as Negative
-    if pending_negation and net_lexical_score == 0.0 and (set(words) & deprivation_negators):
+    if had_deprivation_negator and net_lexical_score == 0.0 and (set(words) & deprivation_negators):
         net_lexical_score = -1.0 * pending_intensifier
         for t in token_scores:
             if t["word"] in deprivation_negators:
@@ -1046,7 +1139,6 @@ def evaluate_clause(clause, lexicon):
                 t["role"] = f"Negative Deprivation ({round(net_lexical_score, 2)})"
                 break
 
-    # Handle Tagalog counterfactual wish complaints (e.g., "Maganda sana kung nagana talaga computer sa computer lab")
     if "sana" in words and ("kung" in words or "kaso" in words) and net_lexical_score > 0:
         net_lexical_score = -abs(net_lexical_score)
         for t in token_scores:
@@ -1056,9 +1148,6 @@ def evaluate_clause(clause, lexicon):
                 t["role"] = f"Counterfactual Wish Inverter ({round(net_lexical_score, 2)})"
                 break
 
-    has_sarcasm = bool(set(words) & sarcasm_markers)
-
-    # Dynamic confidence when RoBERTa is in Low-Memory fallback (0.75)
     if roberta_score == 0.75 and net_lexical_score != 0.0:
         roberta_score = round(min(0.98, 0.78 + min(abs(net_lexical_score), 3.0) * 0.06), 4)
 
@@ -1099,6 +1188,17 @@ def run_absa_pipeline(raw_comment, lexicon=None):
             "has_sarcasm": has_sarcasm
         })
 
+    for i in range(1, len(breakdown)):
+        cur = breakdown[i]
+        prev = breakdown[i - 1]
+        cur_words = set(re.findall(r'\b\w+\b', cur["clause"].lower()))
+        if cur["has_sarcasm"] and len(cur_words) <= 3 and prev["polarity"] == "Positive":
+            prev["polarity"] = "Negative"
+            prev["lexical_score"] = -abs(prev["lexical_score"] or 1.5)
+            prev["has_sarcasm"] = True
+            prev["explanation"] = f"Confidence: {cur['score']}. Trailing sarcasm marker ('{cur['clause']}') inverted preceding praise to Negative."
+            polarities[i - 1] = "Negative"
+
     pos_count = polarities.count("Positive")
     neg_count = polarities.count("Negative")
     total_lexical = sum(item.get("lexical_score", 0.0) for item in breakdown)
@@ -1106,6 +1206,10 @@ def run_absa_pipeline(raw_comment, lexicon=None):
     has_balancing_naman = (
         pos_count == neg_count and pos_count > 0 and
         any(item["polarity"] == "Positive" and "naman" in re.findall(r'\b\w+\b', item["clause"].lower()) for item in breakdown)
+    )
+    last_clause_negated = (
+        len(breakdown) > 1 and breakdown[-1]["polarity"] == "Negative" and
+        any("Negator" in str(t.get("role", "")) or "Inverted" in str(t.get("role", "")) for t in breakdown[-1].get("token_scores", []))
     )
 
     if any_sarcasm:
@@ -1121,7 +1225,7 @@ def run_absa_pipeline(raw_comment, lexicon=None):
     elif total_lexical < 0:
         overall = "Negative"
     elif pos_count == neg_count and pos_count > 0:
-        overall = breakdown[-1]["polarity"]
+        overall = "Negative" if last_clause_negated else "Neutral"
     else:
         overall = "Neutral"
 
@@ -1180,25 +1284,35 @@ def build_pie_internal(pos, neg, neu, theme="dark"):
 def build_bar_internal(aspects, theme="dark"):
     try:
         T = CHART_THEMES.get(theme, CHART_THEMES["dark"])
-        fig = Figure(figsize=(3.4, 3.0), dpi=200, facecolor='none')
+        fig = Figure(figsize=(3.8, 3.0), dpi=200, facecolor='none')
         FigureCanvas(fig)
         ax = fig.add_subplot(111); ax.set_facecolor('none')
 
-        categories = ['Pedagogy', 'Demeanor', 'Facilities']
-        pos_vals = [aspects.get('Instructional Delivery', {}).get('pos', 0), aspects.get('Faculty Demeanor', {}).get('pos', 0), aspects.get('Facilities', {}).get('pos', 0)]
-        neg_vals = [aspects.get('Instructional Delivery', {}).get('neg', 0), aspects.get('Faculty Demeanor', {}).get('neg', 0), aspects.get('Facilities', {}).get('neg', 0)]
+        categories = ['Pedagogy', 'Demeanor', 'Facilities', 'General']
+        pos_vals = [
+            aspects.get('Instructional Delivery', {}).get('pos', 0),
+            aspects.get('Faculty Demeanor', {}).get('pos', 0),
+            aspects.get('Facilities', {}).get('pos', 0),
+            aspects.get('General Academic', {}).get('pos', 0)
+        ]
+        neg_vals = [
+            aspects.get('Instructional Delivery', {}).get('neg', 0),
+            aspects.get('Faculty Demeanor', {}).get('neg', 0),
+            aspects.get('Facilities', {}).get('neg', 0),
+            aspects.get('General Academic', {}).get('neg', 0)
+        ]
 
-        x = [0, 1, 2]; width = 0.38
+        x = [0, 1, 2, 3]; width = 0.42
         ax.bar(x, pos_vals, width, label='Positive', color='#10b981', zorder=3)
         ax.bar(x, neg_vals, width, bottom=pos_vals, label='Negative', color='#f43f5e', zorder=3)
 
-        ax.set_xticks(x); ax.set_xticklabels(categories, color=T['tick_x'], fontsize=8, fontweight='600')
+        ax.set_xticks(x); ax.set_xticklabels(categories, color=T['tick_x'], fontsize=7.5, fontweight='600')
         ax.tick_params(axis='y', colors=T['tick_y'], labelsize=7.5, length=0)
         ax.tick_params(axis='x', length=0)
         for spine in ax.spines.values(): spine.set_visible(False)
         ax.grid(axis='y', color=T['grid'], linestyle=':', linewidth=0.8, alpha=0.5, zorder=1)
 
-        fig.subplots_adjust(left=0.15, right=0.95, top=0.92, bottom=0.14)
+        fig.subplots_adjust(left=0.14, right=0.96, top=0.92, bottom=0.14)
         buf = io.BytesIO(); fig.savefig(buf, format='png', transparent=True, dpi=200); buf.seek(0)
         return base64.b64encode(buf.getvalue()).decode('utf-8')
     except Exception: return ""
@@ -1209,9 +1323,10 @@ def generate_matplotlib_bar(aspect_counts, theme="dark"): return cached_chart("b
 def compute_prescriptive_insights(records):
     if not records: return [{"level": "Community Baseline", "aspect": "Academic Community Pulse", "ratio": 0, "recommendation": "Community listening portal active."}]
     aspect_stats = {
-        "Instructional Delivery & Pedagogy": {"pos": 0, "neg": 0, "neu": 0},
-        "Faculty Demeanor & Approachability": {"pos": 0, "neg": 0, "neu": 0},
-        "Campus Facilities & Infrastructure": {"pos": 0, "neg": 0, "neu": 0}
+        "Instructional Delivery & Pedagogy": {"pos": 0, "neg": 0, "neu": 0, "records": set()},
+        "Faculty Demeanor & Approachability": {"pos": 0, "neg": 0, "neu": 0, "records": set()},
+        "Campus Facilities & Infrastructure": {"pos": 0, "neg": 0, "neu": 0, "records": set()},
+        "General Academic Feedback": {"pos": 0, "neg": 0, "neu": 0, "records": set()}
     }
     for r in records:
         try:
@@ -1219,17 +1334,21 @@ def compute_prescriptive_insights(records):
                 asp, pol = item.get("aspect"), str(item.get("polarity")).strip().capitalize()
                 if asp in aspect_stats and pol in ["Positive", "Negative", "Neutral"]:
                     aspect_stats[asp]["pos" if pol == "Positive" else "neg" if pol == "Negative" else "neu"] += 1
+                    aspect_stats[asp]["records"].add(r.id)
         except Exception: continue
 
     insights = []
+    min_distinct_records = max(3, MIN_ANON_GROUP)
     for asp, stats in aspect_stats.items():
         total_mentions = stats["pos"] + stats["neg"] + stats["neu"]
-        if total_mentions >= 3:
+        distinct_students = len(stats["records"])
+        if distinct_students >= min_distinct_records and total_mentions >= min_distinct_records:
             neg_ratio = stats["neg"] / total_mentions
             if neg_ratio >= 0.40:
                 if asp == "Campus Facilities & Infrastructure": insights.append({"level": "Community Action Alert", "aspect": asp, "ratio": round(neg_ratio * 100, 1), "recommendation": "Elevated student concerns regarding campus facilities. Student Council should submit an actionable report to General Services."})
                 elif asp == "Instructional Delivery & Pedagogy": insights.append({"level": "Pedagogical Dialogue Request", "aspect": asp, "ratio": round(neg_ratio * 100, 1), "recommendation": "Pacing concerns noted by student body. Recommend consultative forum on syllabus pacing."})
                 elif asp == "Faculty Demeanor & Approachability": insights.append({"level": "Student Welfare Advisory", "aspect": asp, "ratio": round(neg_ratio * 100, 1), "recommendation": "Approachability concerns recorded. Recommend active student-faculty rapport initiatives."})
+                elif asp == "General Academic Feedback": insights.append({"level": "Academic Governance Review", "aspect": asp, "ratio": round(neg_ratio * 100, 1), "recommendation": "Elevated general academic concerns recorded across student submissions. Recommend curriculum and scheduling review with student representatives."})
     if not insights: insights.append({"level": "Community Baseline", "aspect": "Student Body Sentiment Index", "ratio": 0, "recommendation": "Student feedback is within positive academic bounds."})
     return insights
 
@@ -3256,6 +3375,7 @@ def _compute_total_summary(all_matching, aspect_counts):
         "Instructional Delivery & Pedagogy": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
         "Faculty Demeanor & Approachability": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
         "Campus Facilities & Infrastructure": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
+        "General Academic Feedback": {"pos": 0, "neg": 0, "neu": 0, "total": 0},
     }
 
     dataset_for_breakdown = list(all_matching)
@@ -3299,6 +3419,8 @@ def _compute_total_summary(all_matching, aspect_counts):
                     target_asp = "Faculty Demeanor & Approachability"
                 elif "Facilities" in asp:
                     target_asp = "Campus Facilities & Infrastructure"
+                else:
+                    target_asp = "General Academic Feedback"
                 if target_asp:
                     by_aspect_full[target_asp]["total"] += 1
                     by_aspect_full[target_asp][pk] += 1
@@ -3406,14 +3528,15 @@ def get_analytics():
     aspect_counts = {
         "Instructional Delivery": {"pos": 0, "neg": 0, "neu": 0},
         "Faculty Demeanor": {"pos": 0, "neg": 0, "neu": 0},
-        "Facilities": {"pos": 0, "neg": 0, "neu": 0}
+        "Facilities": {"pos": 0, "neg": 0, "neu": 0},
+        "General Academic": {"pos": 0, "neg": 0, "neu": 0}
     }
 
     for r in all_matching:
         try:
             for item in json.loads(r.aspect_breakdown):
                 asp, pol = item.get("aspect", ""), str(item.get("polarity", "")).capitalize()
-                key = "Instructional Delivery" if "Instructional" in asp else "Faculty Demeanor" if "Demeanor" in asp else "Facilities" if "Facilities" in asp else None
+                key = "Instructional Delivery" if "Instructional" in asp else "Faculty Demeanor" if "Demeanor" in asp else "Facilities" if "Facilities" in asp else "General Academic" 
                 if key and pol in ["Positive", "Negative", "Neutral"]:
                     aspect_counts[key]["pos" if pol == "Positive" else "neg" if pol == "Negative" else "neu"] += 1
         except: pass
@@ -3467,6 +3590,7 @@ CUSTOM_SUMMARY_ASPECTS = [
     "Instructional Delivery & Pedagogy",
     "Faculty Demeanor & Approachability",
     "Campus Facilities & Infrastructure",
+    "General Academic Feedback",
 ]
 
 def _canon_aspect(name):
@@ -3474,6 +3598,7 @@ def _canon_aspect(name):
     if "Instructional" in name or "Pedagogy" in name: return CUSTOM_SUMMARY_ASPECTS[0]
     if "Demeanor" in name or "Approachability" in name: return CUSTOM_SUMMARY_ASPECTS[1]
     if "Facilities" in name: return CUSTOM_SUMMARY_ASPECTS[2]
+    if "General" in name or "Academic" in name: return CUSTOM_SUMMARY_ASPECTS[3]
     return None
 
 @app.route('/api/analytics/custom_summary', methods=['GET'])
