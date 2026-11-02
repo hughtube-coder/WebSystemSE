@@ -578,7 +578,7 @@ DEFAULT_LEXICON = {
         "reasonable", "professional", "prepared", "ready", "handa", "dedicated", "passionate", "inspiring",
         "motivating", "encouraging", "friendly", "kind", "polite", "respectful", "magalang", "neat", "tidy",
         "safe", "ligtas", "secure", "peaceful", "quiet", "tahimik", "spacious", "maluwag", "luwag", "bright",
-        "maliwanag", "updated", "modern", "bago", "improved", "better", "quality", "dekalidad", "panalo",
+        "maliwanag", "updated", "modern", "tulong", "gets", "intindi", "maintindihan", "improved", "better", "quality", "dekalidad", "panalo",
         "astig", "lupet", "malupit", "lodi", "dabest", "okay", "ok", "fine", "aprub", "approved", "recommend",
         "recommended", "worthy", "deserve", "kudos", "salute", "proud", "success", "successful", "tagumpay",
         "madali", "dali", "natutunan", "matutunan", "natuto", "accessible", "available", "active", "aktibo"
@@ -586,7 +586,7 @@ DEFAULT_LEXICON = {
     "negative": [
         "bad", "worse", "worst", "hard", "difficult", "useless", "pointless", "worthless", "hot", "slow",
         "late", "boring", "bored", "sabaw", "lutang", "panget", "pangit", "mahirap", "hirap", "mainit", "init",
-        "magulo", "gulo", "mabilis", "confusing", "confused", "nakakalito", "lito", "fast", "sungit", "masungit",
+        "magulo", "gulo", "mabilis", "bilis", "confusing", "confused", "nakakalito", "lito", "fast", "sungit", "masungit",
         "kupal", "bagsak", "tamad", "bastos", "walang kwenta", "kwenta", "mabagal", "bagal", "sira", "nasira",
         "broken", "damaged", "defective", "faulty", "busted", "down", "offline", "disconnected", "disconnect",
         "lag", "laggy", "lagging", "hang", "hanging", "freeze", "freezing", "crash", "crashed", "crashing",
@@ -736,6 +736,11 @@ def setup_database():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        try:
+            db.session.execute(text("DELETE FROM lexicon_terms WHERE word = 'bago';"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         seed_database()
         cleanup_queries = [
             "UPDATE user_login_logs SET user_id = NULL WHERE user_id IN (SELECT id FROM users WHERE username = 'misd_admin' OR email = 'misd@ccc.edu.ph');",
@@ -954,7 +959,10 @@ def evaluate_clause(clause, lexicon):
     pending_intensifier = 1.0
     sarcasm_markers = {"eme", "charot", "charing", "joke"}
     deprivation_negators = {"wala", "walang", "no", "without", "kulang", "zero"}
+    deprivation_nouns = {"kwenta", "silbi", "saysay", "wentang"}
+    profanity_set = {w.lower() for w in DEFAULT_PROFANITY if " " not in w} | {w.lower() for w in _db_profanity_words() if " " not in w}
     tech_context = bool(set(words) & {"wifi", "internet", "net", "connection", "signal", "computer", "computers", "pc", "system", "portal", "service", "response", "action"})
+    unresolved_profanity_tokens = []
 
     for word in words:
         root = strip_tagalog_prefix(word)
@@ -968,12 +976,27 @@ def evaluate_clause(clause, lexicon):
             token_scores.append(token_info)
             continue
 
+        # Handle 'walang kwenta / walang silbi / walang saysay' as Negative (-1.0 * intensifier) instead of double-negative Positive
+        if pending_negation and (word in deprivation_nouns or root in deprivation_nouns):
+            effective = -1.0 * pending_intensifier
+            token_info["base_score"] = -1
+            token_info["final_score"] = round(effective, 2)
+            token_info["role"] = f"Negative Deprivation ({round(effective, 2)})"
+            net_lexical_score += effective
+            pending_negation = False
+            pending_intensifier = 1.0
+            unresolved_profanity_tokens.clear()
+            token_scores.append(token_info)
+            continue
+
         if _match_lex(word, root, lexicon["negations"]):
             pending_negation = True
             token_info["role"] = "Negator (Inverts Next)"
         elif _match_lex(word, root, lexicon["intensifiers"]):
             pending_intensifier = 1.5
             token_info["role"] = "Intensifier (1.5x Multiplier)"
+            if _match_lex(word, root, profanity_set):
+                unresolved_profanity_tokens.append(token_info)
         elif (tech_context and word in ("mabilis", "fast", "quick")) or _match_lex(word, root, lexicon["positive"]):
             base = 1.0
             effective = base * pending_intensifier
@@ -986,6 +1009,7 @@ def evaluate_clause(clause, lexicon):
             token_info["final_score"] = round(effective, 2)
             net_lexical_score += effective
             pending_negation = False; pending_intensifier = 1.0
+            unresolved_profanity_tokens.clear()
         elif _match_lex(word, root, lexicon["negative"]):
             base = -1.0
             effective = base * pending_intensifier
@@ -998,9 +1022,21 @@ def evaluate_clause(clause, lexicon):
             token_info["final_score"] = round(effective, 2)
             net_lexical_score += effective
             pending_negation = False; pending_intensifier = 1.0
+            unresolved_profanity_tokens.clear()
         else:
             token_info["base_score"] = 0; token_info["final_score"] = 0.0; token_info["role"] = "Neutral (0)"
         token_scores.append(token_info)
+
+    # If profanity/insult tokens appeared without any subsequent sentiment adjective to amplify, score them as Negative (-1.0 each)
+    if unresolved_profanity_tokens and net_lexical_score == 0.0:
+        for pt in unresolved_profanity_tokens:
+            pt["base_score"] = -1
+            pt["final_score"] = -1.0
+            pt["role"] = "Negative Profanity/Insult (-1.0)"
+            net_lexical_score -= 1.0
+        pending_intensifier = 1.0
+    elif net_lexical_score == 0.0 and has_profanity(clause_lower):
+        net_lexical_score = -1.0
 
     # If a deprivation negator ("walang wifi", "no aircon", "walang prof") was never resolved by an adjective, score as Negative
     if pending_negation and net_lexical_score == 0.0 and (set(words) & deprivation_negators):
@@ -1059,6 +1095,10 @@ def run_absa_pipeline(raw_comment, lexicon=None):
     neg_count = polarities.count("Negative")
     total_lexical = sum(item.get("lexical_score", 0.0) for item in breakdown)
     any_sarcasm = any(item.get("has_sarcasm", False) for item in breakdown)
+    has_balancing_naman = (
+        pos_count == neg_count and pos_count > 0 and
+        any(item["polarity"] == "Positive" and "naman" in re.findall(r'\b\w+\b', item["clause"].lower()) for item in breakdown)
+    )
 
     if any_sarcasm:
         overall = "Negative"
@@ -1066,10 +1106,14 @@ def run_absa_pipeline(raw_comment, lexicon=None):
         overall = "Positive"
     elif neg_count > pos_count:
         overall = "Negative"
+    elif has_balancing_naman:
+        overall = "Neutral"
     elif total_lexical > 0:
         overall = "Positive"
     elif total_lexical < 0:
         overall = "Negative"
+    elif pos_count == neg_count and pos_count > 0:
+        overall = breakdown[-1]["polarity"]
     else:
         overall = "Neutral"
 
