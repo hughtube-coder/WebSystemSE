@@ -956,7 +956,7 @@
             padding: 13px 16px !important;
             border-bottom: 2px solid #38bdf8 !important;
             border-right: 1px solid rgba(255, 255, 255, 0.16) !important;
-            cursor: pointer;
+            cursor: default;
             user-select: none;
             white-space: nowrap;
         }
@@ -1531,7 +1531,7 @@
             {% if role in ['Developer', 'Admin'] %}
             <button class="btn-nav" onclick="openCsvModal()" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📥 Upload CSV &amp; Template</button>
             {% endif %}
-            <button class="btn-nav" onclick="exportCurrentCsv('xlsx')" style="border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;" title="Download Google-Sheets-style formatted .xlsx table">📊 Export Sheet (.xlsx)</button>
+            
             <button class="btn-nav" onclick="exportCurrentCsv('csv')">📥 Export CSV</button>
             {% if role in ['Developer', 'Admin'] %}
             <button class="btn-nav" onclick="openLexiconModal()">Slang Manager</button>
@@ -1781,12 +1781,11 @@
                     <div class="gs-sheet-tab-group">
                         <div class="gs-sheet-tab">
                             <span>Feedback_Responses</span>
-                            <span style="opacity:0.85; font-size:0.72rem;">⌄</span>
                         </div>
                         <span class="gs-sheet-grid-badge" title="Google-Sheets-Style Structured Table View">⊞</span>
                     </div>
                     <div style="display:flex; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
-                        <button type="button" class="btn-nav" onclick="exportCurrentCsv('xlsx')" style="padding:5px 12px; font-size:0.74rem; border-color:rgba(14,165,233,0.45); color:#38bdf8; font-weight:700;">📊 Download Styled Sheet (.xlsx)</button>
+                        
                         <button type="button" class="btn-nav" onclick="exportCurrentCsv('csv')" style="padding:5px 12px; font-size:0.74rem;">📥 Raw (.csv)</button>
                     </div>
                 </div>
@@ -1794,11 +1793,11 @@
                     <table class="logs-table">
                         <thead>
                             <tr>
-                                <th style="width:9%;" onclick="sortLogsByColumn('program')"><div class="gs-th-inner"><span>Program</span><span class="gs-th-caret" id="caret_program">⌄</span></div></th>
-                                <th style="width:13%;" onclick="sortLogsByColumn('term')"><div class="gs-th-inner"><span>Academic Term</span><span class="gs-th-caret" id="caret_term">⌄</span></div></th>
-                                <th style="width:34%;" onclick="sortLogsByColumn('text')"><div class="gs-th-inner"><span>Student Narrative &amp; Why Positive / Negative</span><span class="gs-th-caret" id="caret_text">⌄</span></div></th>
-                                <th style="width:10%;" onclick="sortLogsByColumn('sentiment')"><div class="gs-th-inner"><span>Polarity</span><span class="gs-th-caret" id="caret_sentiment">⌄</span></div></th>
-                                <th style="width:34%;" onclick="sortLogsByColumn('confidence')"><div class="gs-th-inner"><span>Aspects &amp; Word Impact Scaling (-1, 0, 1)</span><span class="gs-th-caret" id="caret_confidence">⌄</span></div></th>
+                                <th style="width:9%;"><div class="gs-th-inner"><span>Program</span></div></th>
+                                <th style="width:13%;"><div class="gs-th-inner"><span>Academic Term</span></div></th>
+                                <th style="width:34%;"><div class="gs-th-inner"><span>Student Narrative &amp; Why Positive / Negative</span></div></th>
+                                <th style="width:10%;"><div class="gs-th-inner"><span>Polarity</span></div></th>
+                                <th style="width:34%;"><div class="gs-th-inner"><span>Aspects &amp; Word Impact Scaling (-1, 0, 1)</span></div></th>
                             </tr>
                         </thead>
                         <tbody id="logsTableBody"></tbody>
