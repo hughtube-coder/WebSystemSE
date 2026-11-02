@@ -667,9 +667,8 @@ def rescore_neutral_records():
         lexicon = get_active_lexicon()
         updated_posts = 0
         for post in CommunityPost.query.filter_by(is_announcement=False).all():
-            if str(post.sentiment or "").strip().lower() == "neutral":
-                _, new_sent, new_conf, new_breakdown = run_absa_pipeline(post.content, lexicon)
-                if new_sent != "Neutral" or new_conf != post.confidence:
+            _, new_sent, new_conf, new_breakdown = run_absa_pipeline(post.content, lexicon)
+            if new_sent != post.sentiment or new_conf != post.confidence:
                     post.sentiment = new_sent
                     post.confidence = new_conf
                     post.aspect_breakdown = json.dumps(mask_any(new_breakdown))
@@ -677,9 +676,8 @@ def rescore_neutral_records():
 
         updated_feedback = 0
         for fb in Feedback.query.filter(Feedback.human_sentiment.is_(None)).all():
-            if str(fb.sentiment or "").strip().lower() == "neutral":
-                cleaned, new_sent, new_conf, new_breakdown = run_absa_pipeline(fb.raw_text, lexicon)
-                if new_sent != "Neutral" or new_conf != fb.confidence:
+            cleaned, new_sent, new_conf, new_breakdown = run_absa_pipeline(fb.raw_text, lexicon)
+            if new_sent != fb.sentiment or new_conf != fb.confidence:
                     fb.cleaned_text = mask_profanity(cleaned)
                     fb.sentiment = new_sent
                     fb.ai_sentiment = new_sent
@@ -1046,6 +1044,16 @@ def evaluate_clause(clause, lexicon):
                 t["base_score"] = -1
                 t["final_score"] = round(net_lexical_score, 2)
                 t["role"] = f"Negative Deprivation ({round(net_lexical_score, 2)})"
+                break
+
+    # Handle Tagalog counterfactual wish complaints (e.g., "Maganda sana kung nagana talaga computer sa computer lab")
+    if "sana" in words and ("kung" in words or "kaso" in words) and net_lexical_score > 0:
+        net_lexical_score = -abs(net_lexical_score)
+        for t in token_scores:
+            if t["word"] == "sana":
+                t["base_score"] = -1
+                t["final_score"] = round(net_lexical_score, 2)
+                t["role"] = f"Counterfactual Wish Inverter ({round(net_lexical_score, 2)})"
                 break
 
     has_sarcasm = bool(set(words) & sarcasm_markers)
