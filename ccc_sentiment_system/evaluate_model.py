@@ -38,6 +38,56 @@ EVALUATION_DATASET = [
     ("Hindi masungit si Ma'am kapag tinatanong sa office.", "Positive") # Inverted Negative
 ]
 
+
+# 40-Item Unseen Holdout Test Set (Untuned Adversarial & Natural Student Feedback)
+UNSEEN_HOLDOUT_DATASET = [
+    # Positive (14)
+    ("Mabilis sumagot si sir kapag may tanong kami sa group chat.", "Positive"),
+    ("Hindi ko alam kung bakit sobrang galing ni sir magturo sa algorithm.", "Positive"),
+    ("Not only is the prof good, the lessons are great and practical.", "Positive"),
+    ("Hindi lang mabait si maam, sobrang husay pa mag-explain ng code.", "Positive"),
+    ("I really like the new laboratory computers, smooth gamitin sa programming.", "Positive"),
+    ("Malinis at malamig ang room namin sa second floor.", "Positive"),
+    ("Very considerate at patient si prof sa mga beginners mag-code.", "Positive"),
+    ("Pota ang galing magturo ni Sir sa Networking!", "Positive"),
+    ("Gago ang husay ng explanation sa Data Structures!", "Positive"),
+    ("Hindi mahirap intindihan yung lecture kasi organized ang slides.", "Positive"),
+    ("Responsive ang portal at mabilis ang internet sa computer lab.", "Positive"),
+    ("Thankful kami kasi approachable at fair magbigay ng grades si maam.", "Positive"),
+    ("Solid ang hands-on exercises, marami kaming natutunan ngayong sem.", "Positive"),
+    ("Maayos na ulit yung projector at gumagana na lahat ng PC sa lab.", "Positive"),
+
+    # Negative (16)
+    ("The grading system is unclear and unfair to students.", "Negative"),
+    ("The instructor was unprofessional and inconsiderate during submission.", "Negative"),
+    ("The laboratory wifi is unavailable and inaccessible all week.", "Negative"),
+    ("Very inconvenient schedule and uncomfortable chairs in the room.", "Negative"),
+    ("The portal is unresponsive and inefficient during enrollment.", "Negative"),
+    ("I dislike how the lessons are rushed every meeting.", "Negative"),
+    ("Sayang ang tuition, laging walang klase at absent.", "Negative"),
+    ("The wifi is slow in the computer lab.", "Negative"),
+    ("Ang galing ni sir. Charot.", "Negative"),
+    ("The programming exam was hard, no joke.", "Negative"),
+    ("Maganda sana kung nagana talaga computer sa computer lab.", "Negative"),
+    ("Tanginang wifi yan walang kwenta.", "Negative"),
+    ("Kupal at bastos sumagot pag tinatanong sa klase.", "Negative"),
+    ("Bobo at tanga yung lumang systema, laging naghahang.", "Negative"),
+    ("Walang aircon sa room tapos sira pa yung electric fan.", "Negative"),
+    ("Galing magturo ni sir pero putangina ang init sa room.", "Negative"),
+
+    # Neutral (10)
+    ("Maganda ang turo kaso lang mainit sa lab.", "Neutral"),
+    ("Ok but slow wifi in the laboratory.", "Neutral"),
+    ("Good teacher but bad wifi.", "Neutral"),
+    ("He speaks like a robot during lectures.", "Neutral"),
+    ("Nag-upload na ng bagong module at reading materials sa portal.", "Neutral"),
+    ("Our midterm exam is scheduled next Wednesday in Lab 2.", "Neutral"),
+    ("We used Python, Flask, and PostgreSQL for our software engineering project.", "Neutral"),
+    ("The class section was transferred to the third floor room.", "Neutral"),
+    ("May general assembly ang DCI students bukas ng hapon.", "Neutral"),
+    ("The laboratory manual has ten chapters covering SQL queries.", "Neutral"),
+]
+
 def benchmark_roberta_pipeline():
     print("=" * 65)
     print("  CITY COLLEGE OF CALAMBA — INSTITUTIONAL ABSA BENCHMARK")
