@@ -581,7 +581,15 @@ DEFAULT_LEXICON = {
         "maliwanag", "updated", "modern", "tulong", "gets", "intindi", "maintindihan", "improved", "better", "quality", "dekalidad", "panalo",
         "astig", "lupet", "malupit", "lodi", "dabest", "okay", "ok", "fine", "aprub", "approved", "recommend",
         "recommended", "worthy", "deserve", "kudos", "salute", "proud", "success", "successful", "tagumpay",
-        "madali", "dali", "natutunan", "matutunan", "natuto", "accessible", "available", "active", "aktibo"
+        "madali", "dali", "natutunan", "matutunan", "natuto", "accessible", "available", "active", "aktibo",
+        # Expanded Taglish & Campus Positive Slang
+        "paborito", "bongga", "swabe", "legit", "bet", "keri", "kaya", "angas", "maangas", "bilib",
+        "pak", "slay", "fire", "lit", "goated", "goat", "w", "panis", "idol", "master", "batak",
+        "mamaw", "halimaw", "banayad", "kalmado", "relax", "hayblad-free", "malupet", "petmalu",
+        "werpa", "matsala", "tenkyu", "ty", "omsim", "korique", "tumpak", "sakto", "swak", "winner",
+        "champion", "champ", "bida", "primera", "top", "topnotcher", "exemplary", "stellar", "clutch",
+        "competent", "knowledgeable", "articulate", "thorough", "transparent", "punctual", "maagap",
+        "masigasig", "matulungin", "maaasahan", "malumanay", "mahinahon", "mapagbigay", "maunawain"
     ],
     "negative": [
         "bad", "worse", "worst", "hard", "difficult", "useless", "pointless", "worthless", "hot", "slow",
@@ -607,20 +615,38 @@ DEFAULT_LEXICON = {
         "frustrating", "frustrated", "disappointing", "disappointed", "sad", "malungkot", "lungkot", "upset",
         "angry", "galit", "mad", "furious", "hate", "ayaw", "awit", "umay", "nakakaumay", "bulok", "palpak",
         "pahirap", "pasakit", "problema", "problem", "problems", "issue", "issues", "complaint", "reklamo",
-        "wrong", "mali", "mistake", "unusable", "inaccessible", "unavailable", "dislike", "disliked", "dislikes", "inefficient", "ineffective", "inaccurate", "inadequate", "incomplete", "insensitive", "unhelpful", "unacceptable", "unsatisfactory"
+        "wrong", "mali", "mistake", "unusable", "inaccessible", "unavailable", "dislike", "disliked", "dislikes",
+        "inefficient", "ineffective", "inaccurate", "inadequate", "incomplete", "insensitive", "unhelpful",
+        "unacceptable", "unsatisfactory",
+        # Expanded Taglish & Campus Negative Slang
+        "laos", "sablay", "mintis", "olats", "talo", "lugi", "luging", "budol", "scam", "paasa",
+        "epal", "pabuhat", "pabigat", "pasaway", "makulit", "mareklamo", "maarte", "arte", "oa",
+        "cringe", "korni", "corny", "waley", "meh", "mid", "chaka", "chararat", "jologs", "baduy",
+        "barubal", "garapal", "swapang", "madamot", "kuripot", "suplado", "suplada", "matapobre",
+        "maldita", "maldito", "pilosopo", "pikon", "pikunin", "iritable", "mainitin", "highblood",
+        "hayblad", "sakit sa ulo", "nakakahilo", "hilo", "nakakaantok", "antok", "tulog", "nakakatamad",
+        "nakakabagot", "bagot", "buryo", "nakakaburyo", "urat", "nakakaurat", "yamot", "nakakayamot",
+        "asar", "nakakaasar", "banas", "nakakabanas", "sama", "masama", "saklap", "masaklap", "kawawa",
+        "deliks", "delikado", "alanganin", "tagilid", "bitin", "kapos", "mintis", "sabog", "kalat",
+        "barado", "siksikan", "maalinsangan", "alinsangan", "kulob", "makulob", "alikabok", "maalikabok",
+        "kalawang", "makalawang", "basag", "putol", "luwag", "maluwag ang turnilyo", "kisapmata",
+        "patay-sindi", "pawala-wala", "putol-putol", "turtle", "pagong", "usad-pagong", "bulilyaso",
+        "aberya", "perwisyo", "abala", "kalbaryo", "parusa", "pahirapan", "hulaan", "roleta", "darts"
     ],
     "intensifiers": [
         "sobrang", "sobra", "masyado", "masyadong", "very", "super", "really", "so", "grabe", "grabeng",
         "napaka", "ubod", "saksakan", "talaga", "talagang", "tunay", "lubos", "extremely", "highly",
-        "totally", "completely", "absolutely", "too", "pinaka", "lagi", "laging", "always", "palagi", "palaging"
+        "totally", "completely", "absolutely", "too", "pinaka", "lagi", "laging", "always", "palagi", "palaging",
+        "solidong", "matindi", "matinding", "todo", "todong", "todo-todo", "wagas", "bonggang", "over",
+        "ultra", "mega", "hella", "lowkey", "highkey", "legitimately", "genuinely", "seriously", "literal"
     ],
     "negations": [
         "not", "no", "none", "nothing", "without", "never", "hindi", "di", "wala", "walang", "bawal",
         "dont", "doesnt", "didnt", "isnt", "arent", "wasnt", "werent", "cant", "cannot", "couldnt",
-        "wont", "wouldnt", "shouldnt", "hasnt", "havent", "hadnt", "eme", "charot", "charing", "joke"
+        "wont", "wouldnt", "shouldnt", "hasnt", "havent", "hadnt", "eme", "charot", "charing", "joke",
+        "char", "chariz", "chz", "chos", "echos", "keme", "kemerut", "jk", "syempre", "asa"
     ]
 }
-
 def seed_database():
     existing_words = {t.word for t in LexiconTerm.query.all()}
     for cat, words in DEFAULT_LEXICON.items():
@@ -995,7 +1021,7 @@ def evaluate_clause(clause, lexicon):
     net_lexical_score = 0.0
     negation_window = 0
     pending_intensifier = 1.0
-    sarcasm_markers = {"eme", "charot", "charing", "joke"}
+    sarcasm_markers = {"eme", "charot", "charing", "joke", "char", "chariz", "chz", "chos", "echos", "keme", "kemerut", "jk"}
     sincerity_negators = {"no", "not", "without", "walang", "wala", "di", "hindi"}
     deprivation_negators = {"wala", "walang", "no", "without", "kulang", "zero"}
     deprivation_nouns = {"kwenta", "silbi", "saysay", "wentang"}
