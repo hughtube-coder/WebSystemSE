@@ -1862,7 +1862,11 @@ function renderTownHallFeed() {
                 ${mediaImageHTML}
                 ${mediaLinkHTML}
                 <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">
-                    ${p.is_announcement ? '' : `<span class="post-cat-badge" style="background:rgba(37,99,235,0.15); color:var(--txt-blue);">AI Evaluated: ${esc(p.sentiment)}</span>`}
+                    ${p.is_announcement ? '' : (() => {
+                        const sNorm = String(p.sentiment || 'Neutral').trim().toLowerCase();
+                        const sCls = sNorm === 'positive' ? 'ai-eval-positive' : (sNorm === 'negative' ? 'ai-eval-negative' : 'ai-eval-neutral');
+                        return `<span class="ai-eval-badge ${sCls}"><span class="ai-eval-dot" aria-hidden="true"></span><span>AI Evaluated: ${esc(p.sentiment)}</span></span>`;
+                    })()}
                     <button type="button" class="comments-toggle-btn" id="commentsBtn_${p.id}" aria-expanded="false" aria-controls="commentsThread_${p.id}" onclick="toggleComments(${p.id})"><span class="ct-ic" aria-hidden="true">💬</span><span class="ct-label" id="commentsLabel_${p.id}">${commentButtonLabel(p.comment_count, false)}</span><span class="ct-caret" aria-hidden="true">▾</span></button>
                     ${p.can_edit ? `<button onclick="openEditModal(${p.id})" style="background:none; border:none; color:var(--txt-blue); font-size:0.75rem; font-weight:700; cursor:pointer; text-decoration:underline;">✏️ Edit Post</button><button onclick="openDeletePostModal(${p.id})" style="background:none; border:none; color:var(--txt-red); font-size:0.75rem; font-weight:700; cursor:pointer; text-decoration:underline;">🗑️ Delete</button>` : ''}
                     ${isAuthorizedAnnouncer ? `<button onclick="openActionModal(${p.id}, '${esc(p.status)}')" style="background:none; border:none; color:var(--txt-gold); font-size:0.75rem; font-weight:700; cursor:pointer; text-decoration:underline;">✍ Post Resolution</button>` : ''}
